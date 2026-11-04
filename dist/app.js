@@ -150,7 +150,7 @@ function comparePage() {
   ];
   return `<a class="back" href="#hikes">← All hikes</a>
     <div class="intro"><span class="eyebrow">Trail planner</span><h1>Compare hikes</h1>
-      <p>${selected.length < 2 ? 'Pick two or three trails from the catalog to compare them.' : 'Compare difficulty, time, crowds, and trail conditions. Scroll sideways to see more.'}</p></div>
+      <p>${selected.length < 2 ? 'Pick two or three trails from the catalog to compare them.' : 'Compare difficulty, time, crowds, and trail conditions.'}</p></div>
     <section class="card fit-card"><span class="eyebrow">Group recommendation</span><h2>Best fit for your group</h2>
       <p>${escapeHtml(state.groupName)} · ${group.length} hikers · <a href="#group/compare">Edit group</a></p>
       <form id="fit-form" class="fields">
@@ -249,6 +249,7 @@ function reviewPage(trail) {
 function render(focus = false) {
   removeMap();
   const [page, trailId] = location.hash.slice(1).split('/');
+  screen.dataset.page = page || 'hikes';
   const trail = trails.find(item => item.id === trailId);
   document.querySelector('#group-link').toggleAttribute('aria-current', ['group', 'friends', 'profile', 'chat'].includes(page));
   document.querySelector('#history-link').toggleAttribute('aria-current', page === 'history');

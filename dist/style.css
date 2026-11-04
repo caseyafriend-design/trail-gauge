@@ -139,3 +139,27 @@ textarea{font:inherit;width:100%;border:1px solid #4a554b;border-radius:8px;back
 .fit-demo{margin-top:12px;font-size:.85rem}
 .fit-demo summary{cursor:pointer;color:var(--mint)}
 .fit-demo p,.fit-demo button{margin-top:8px}
+
+@media (min-width: 760px) {
+  .shell{max-width:1360px;padding-inline:clamp(24px,4vw,56px)}
+  .masthead{padding-top:28px}
+  .primary-nav{grid-template-columns:repeat(4,minmax(0,138px));justify-content:start}
+  .primary-nav a{flex-direction:row;gap:8px;font-size:.88rem;min-height:48px}
+  .intro h1,.detail h1{font-size:clamp(2.25rem,3.5vw,3.25rem)}
+  .region>.stack{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .trail-card{padding:18px}
+  #trail-map{height:clamp(400px,58vh,680px)}
+  #screen[data-page="trail"]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px;align-items:start}
+  #screen[data-page="trail"]>.back{grid-column:1/-1;margin:0;justify-self:start}
+  #screen[data-page="trail"]>.planning{margin-top:0}
+  #screen[data-page="trail"] .gauge{width:min(100%,330px)}
+  #screen:is([data-page="group"],[data-page="friends"],[data-page="profile"],[data-page="review"],[data-page="chat"],[data-page="history"]){max-width:680px;margin-inline:auto}
+}
+
+@media (min-width: 1060px) {
+  .region>.stack{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #screen[data-page="compare"]{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,2.4fr);column-gap:24px;align-items:start}
+  #screen[data-page="compare"]>.back,#screen[data-page="compare"]>.intro{grid-column:1/-1}
+  #screen[data-page="compare"]>.back{justify-self:start}
+  .compare-scroll th,.compare-scroll td{padding:12px}
+}
