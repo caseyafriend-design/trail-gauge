@@ -1,0 +1,304 @@
+[
+  {
+    "id": "riverside-walk",
+    "name": "Riverside Walk",
+    "region": "utah",
+    "parkCode": "zion",
+    "park": "Zion National Park",
+    "trailheadName": "Temple of Sinawava · shuttle stop 9",
+    "routeType": "Out and back",
+    "miles": 2,
+    "gain": 203,
+    "gainNote": "Round-trip ascent derived from the NPS accessibility survey’s 154.2 ft outbound gain and 48.5 ft outbound loss.",
+    "surface": "Concrete, with sandy sections",
+    "typicalGrade": 4.6,
+    "access": "Begin past the restrooms at Temple of Sinawava. Turn around where the paved path ends, before entering The Narrows.",
+    "statsSource": "https://www.nps.gov/thingstodo/hike-riverside-walk.htm",
+    "segments": [
+      [
+        2962,
+        "Riverside Walk",
+        "reverse"
+      ]
+    ],
+    "return": "reverse",
+    "stateCode": "UT"
+  },
+  {
+    "id": "bear-lake",
+    "name": "Bear Lake Loop",
+    "region": "rockies",
+    "parkCode": "romo",
+    "park": "Rocky Mountain National Park",
+    "trailheadName": "Bear Lake · lakeshore junction",
+    "routeType": "Loop",
+    "miles": 0.6,
+    "gain": 71,
+    "gainNote": "Elevation gain is published by NPS for the loop.",
+    "surface": "Firm packed gravel, wooden bridges, and log steps",
+    "unevenFooting": true,
+    "typicalGrade": 5.3,
+    "access": "Start at the east lakeshore junction, a short walk from Bear Lake Trailhead. The short parking-area approach is outside the loop distance. Check Bear Lake Road access and timed entry with the park.",
+    "statsSource": "https://www.nps.gov/romo/planyourvisit/exploring-the-bear-lake-road-corridor.htm",
+    "guideSource": "https://www.nps.gov/romo/planyourvisit/upload/ROMO-Access-Guide_Updated-6-2026-2.pdf",
+    "trailheadElevation": 9475,
+    "segments": [
+      [
+        1478,
+        "Bear Lake Loop Trail"
+      ],
+      [
+        4155,
+        "Bear Lake Loop Trail"
+      ]
+    ],
+    "stateCode": "CO"
+  },
+  {
+    "id": "flattop-mountain",
+    "name": "Flattop Mountain",
+    "region": "rockies",
+    "parkCode": "romo",
+    "park": "Rocky Mountain National Park",
+    "trailheadName": "Bear Lake Trailhead",
+    "routeType": "Out and back",
+    "miles": 8.8,
+    "gain": 2849,
+    "gainNote": "NPS publishes 2,849 ft of gain to the destination. Extra ascent on the return is unverified.",
+    "surface": "Earth in NPS GIS; exposed alpine terrain above treeline",
+    "access": "Follow the Flattop route from Bear Lake to the Tonahutu/North Inlet junction, then return the same way. Check the park’s trail conditions and Bear Lake Road access.",
+    "statsSource": "https://www.nps.gov/romo/planyourvisit/list_hiking_trails.htm",
+    "guideSource": "https://www.nps.gov/romo/planyourvisit/hiking.htm",
+    "trailheadElevation": 9475,
+    "upperPoint": {
+      "name": "Upper Flattop",
+      "coordinates": [
+        -105.6902244,
+        40.3089462
+      ],
+      "elevationFt": 12316,
+      "source": "https://epqs.nationalmap.gov/v1/json?x=-105.69022436&y=40.30894616&units=Feet&wkid=4326&includeDate=true"
+    },
+    "segments": [
+      [
+        3336,
+        "Bear Lake Loop Trail"
+      ],
+      [
+        5354,
+        "Bear Lake Loop Trail"
+      ],
+      [
+        1478,
+        "Bear Lake Loop Trail"
+      ],
+      [
+        3379,
+        "Bear Lake To Bierstadt Junction Trail"
+      ],
+      [
+        5942,
+        "Bear Lake To Bierstadt Junction Trail"
+      ],
+      [
+        2837,
+        "Flattop Mountain Trail"
+      ],
+      [
+        2299,
+        "Flattop Mountain Trail"
+      ],
+      [
+        2214,
+        "Flattop Mountain Trail",
+        "reverse"
+      ]
+    ],
+    "return": "reverse",
+    "stateCode": "CO"
+  },
+  {
+    "id": "hall-of-mosses",
+    "name": "Hall of Mosses",
+    "region": "olympic",
+    "parkCode": "olym",
+    "park": "Olympic National Park",
+    "trailheadName": "Hoh Rain Forest · Hall of Mosses trail entrance",
+    "routeType": "Loop with short approach",
+    "miles": 0.8,
+    "gain": 100,
+    "gainNote": "Elevation gain is published by NPS for the loop.",
+    "surface": "Compacted gravel with rocky stretches and steps",
+    "unevenFooting": true,
+    "access": "Start near the Hoh Rain Forest Visitor Center. The trail crosses Taft Creek. Check Hoh Road and facility access with the park.",
+    "statsSource": "https://www.nps.gov/olym/planyourvisit/hoh-rain-forest-area-brochure.htm",
+    "guideSource": "https://www.nps.gov/places/000/hall-of-mosses-trailhead.htm",
+    "segments": [
+      [
+        15788,
+        "HALL OF MOSSES NATURE TRAIL"
+      ],
+      [
+        22663,
+        "HALL OF MOSSES NATURE TRAIL"
+      ]
+    ],
+    "return": "first-segment",
+    "stateCode": "WA"
+  },
+  {
+    "id": "lower-yosemite-fall",
+    "name": "Lower Yosemite Fall Trail",
+    "region": "california",
+    "stateCode": "CA",
+    "parkCode": "yose",
+    "park": "Yosemite National Park",
+    "trailheadName": "Lower Yosemite Fall · east junction near shuttle stop 6",
+    "routeType": "Loop",
+    "miles": 1,
+    "gain": 50,
+    "gainNote": "The National Park Service publishes about 50 ft of elevation gain for the full loop.",
+    "surface": "Paved",
+    "access": "Start on the loop near the Lower Yosemite Fall shuttle stop. Follow the path to the footbridge and return on the opposite side of the loop. The shuttle-stop approach is outside the loop.",
+    "statsSource": "https://www.nps.gov/yose/planyourvisit/lowerfalltrail.htm",
+    "guideSource": "https://www.nps.gov/yose/planyourvisit/valleyhikes.htm",
+    "segments": [
+      [
+        19583,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        14897,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        17453,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        22651,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        19297,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        21456,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        16590,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        15403,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        22649,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        15750,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        21702,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        17895,
+        "Lower Yosemite Fall Trail"
+      ],
+      [
+        21867,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        19406,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        16526,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        17222,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        22143,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        18423,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        22616,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ],
+      [
+        17612,
+        "Lower Yosemite Fall Trail",
+        "reverse"
+      ]
+    ]
+  },
+  {
+    "id": "limberlost",
+    "name": "Limberlost Trail",
+    "region": "virginia",
+    "stateCode": "VA",
+    "parkCode": "shen",
+    "park": "Shenandoah National Park",
+    "trailheadName": "Limberlost parking area · Skyline Drive mile 43",
+    "routeType": "Loop",
+    "miles": 1.3,
+    "gain": 130,
+    "gainNote": "The National Park Service publishes 130 ft of elevation gain for the full loop.",
+    "surface": "Primarily crushed greenstone",
+    "access": "The mapped trail starts and ends at neighboring access points in the Limberlost parking area. Check Skyline Drive access with the park.",
+    "statsSource": "https://www.nps.gov/thingstodo/limberlost.htm",
+    "segments": [
+      [
+        13880,
+        "Limberlost Accessible Trail"
+      ]
+    ],
+    "maxParkingGapMeters": 15,
+    "typicalGrade": 3.5
+  },
+  {
+    "id": "desert-discovery",
+    "name": "Desert Discovery Trail",
+    "region": "arizona",
+    "stateCode": "AZ",
+    "parkCode": "sagu",
+    "park": "Saguaro National Park",
+    "trailheadName": "Desert Discovery Trailhead · Tucson Mountain District",
+    "routeType": "Loop",
+    "miles": 0.4,
+    "gain": 26,
+    "gainNote": "The NPS accessibility survey measured 25.8 ft of loop gain, rounded to 26 ft.",
+    "surface": "Paved",
+    "typicalGrade": 2.7,
+    "access": "The mapped trail starts and ends at neighboring access points in the Desert Discovery parking area.",
+    "statsSource": "https://www.nps.gov/sagu/planyourvisit/tmd-trail-accessibility.htm",
+    "segments": [
+      [
+        3665,
+        "Desert Discovery Trail"
+      ]
+    ],
+    "maxParkingGapMeters": 15
+  }
+]
