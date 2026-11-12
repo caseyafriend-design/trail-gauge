@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#131613">
+<title>Trail Gauge</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<div class="shell">
+<header class="masthead">
+  <a class="brand" href="#explore"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 24 13 8l6 9 4-6 6 13H3Z M10 13l3 3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Trail Gauge</a>
+  <div class="header-actions">
+    <a href="#group" id="group-link" class="group-shortcut"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2m1-15a3 3 0 0 1 0 6m2 3a4 4 0 0 1 3 4v2"/></svg><span><span>My Group</span><small id="active-group-name"></small></span></a>
+    <details class="header-menu">
+      <summary aria-label="Open navigation menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></summary>
+      <div class="menu-panel"><a href="#record">Record a hike</a><a href="#social/community">Friends &amp; community</a><a href="#friends">Profiles &amp; local guests</a><a href="#history" id="history-link">Hike history</a></div>
+    </details>
+  </div>
+</header>
+<nav aria-label="Main navigation" class="primary-nav">
+  <a href="#explore" id="explore-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 19 7-12 4 6 3-4 6 10H2Z"/></svg>Explore</a>
+  <a href="#map" id="map-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15"/></svg>Map</a>
+  <a href="#compare" id="compare-link"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="7" height="14" rx="2"/><rect x="14" y="5" width="7" height="14" rx="2"/></svg><span class="nav-label">Compare <span id="compare-count"></span></span></a>
+
+</nav>
+<div class="reminder-banner" id="reminder-banner" role="status" hidden><span></span><button type="button" class="compare-toggle">Dismiss</button></div>
+<main id="screen" tabindex="-1"></main>
+<p id="storage-status" role="status"></p>
+<footer><span>Trail data from USGS and the National Park Service. Profiles, groups, reviews, and raw recordings stay in this browser. Sharing sends only your selected summary.</span></footer>
+</div>
+</body>
+</html>
