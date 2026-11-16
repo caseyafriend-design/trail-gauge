@@ -1,4 +1,5 @@
 import { explorePage, mountExplore, preferenceButtons, preferenceKey } from './explore.js';
+import { routeSummary } from './route-summary.js';
 import { defaultTrip, packingCategories, packingSuggestions, tripKey } from './packing.js';
 import { packingPage, packingForecastPanels, readTrip, updatePackingProgress } from './packing-page.js';
 import { readPlanningProfile } from './profile-planning.js';
@@ -153,6 +154,7 @@ function mapPanel(localTrails, detail = false) {
 
 function planningCard(trail) {
   return `<section class="card planning">
+    ${routeSummary(trail)}
     <h2>Route map</h2>
     <section class="detail-map" aria-label="Verified route map">
       ${mapPanel([trail], true)}
@@ -351,7 +353,8 @@ function trailPage(trail) {
     <article class="card detail"><p class="trail-park">${trail.park} · ${trail.routeType}</p>
     <h1>${trail.name}</h1>
     <div id="detail-estimate">${difficultyPanel(trail)}</div>
-    <div class="trail-actions detail-actions">${compareButton(trail)}${preferenceButtons(trail, state)}</div>
+    <details class="form-details" id="trail-save-actions"><summary>Save, skip or compare this hike</summary>
+      <div class="trail-actions detail-actions">${compareButton(trail)}${preferenceButtons(trail, state)}</div></details>
     <p class="compare-status" role="status"></p>
     <div class="detail-links"><a class="button" href="#packing/${trail.id}">Plan &amp; pack</a>
       <a class="button secondary" href="#group/${trail.id}">Edit group · ${size} ${size === 1 ? 'hiker' : 'hikers'}</a></div>
