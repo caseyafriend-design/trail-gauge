@@ -92,7 +92,7 @@ await browserSession(async({c,evaluate,wait,goto,shot,events,scratch,root,origin
   await c('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
   await evaluate("document.querySelector('#reminder-form [name=interval]').value=20;document.querySelector('#reminder-form').requestSubmit()");
   assert.equal(await evaluate("Object.values(JSON.parse(localStorage.getItem('trail-gauge-v2')).packing)[0].reminder.interval"),20);
-  await c('Page.reload');await wait("document.querySelector('#packing-reminders summary').textContent.includes('active')");
+  await c('Page.reload');await wait("document.querySelector('#packing-reminders summary')?.textContent.includes('active')");
   await evaluate("document.querySelector('#packing-reminders').open=true;document.querySelector('#reminder-form [value=stop]').click()");
   assert.ok(!await evaluate("Object.values(JSON.parse(localStorage.getItem('trail-gauge-v2')).packing)[0].reminder"));
   assert.ok(await evaluate("document.querySelector('#packing-checklist').getBoundingClientRect().top<document.querySelector('#packing-settings').getBoundingClientRect().top"));
