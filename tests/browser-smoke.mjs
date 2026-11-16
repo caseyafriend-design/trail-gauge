@@ -6,7 +6,7 @@ import { once } from 'node:events';
 import { readFile, writeFile, mkdir, mkdtemp, rm, watch } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 
-const output = resolve('.verification');
+const output = resolve(process.env.BROWSER_EVIDENCE_DIR ?? '.verification');
 await mkdir(output, { recursive: true });
 const profile = await mkdtemp(resolve(output, 'chrome-'));
 const root = resolve('dist');
