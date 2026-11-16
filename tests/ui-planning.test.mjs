@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { routeSummary } from '../dist/route-summary.js';
+import { difficultyDial } from '../dist/difficulty-view.js';
 import { runInNewContext } from 'node:vm';
 
 test('route overview distinguishes total itinerary, start, access and unknowns', () => {
@@ -34,5 +35,14 @@ test('route overview precedes map and secondary actions stay available in closed
   assert.ok(source.indexOf('${routeSummary(trail)}') < source.indexOf('<h2>Route map</h2>'));
   assert.match(source, /<details class="form-details" id="trail-save-actions"><summary>Save, skip or compare this hike<\/summary>\s*<div class="trail-actions detail-actions">\$\{compareButton\(trail\)\}\$\{preferenceButtons\(trail, state\)\}<\/div><\/details>/);
   for (const href of ['#packing/${trail.id}', '#group/${trail.id}', '#review/${trail.id}', '#map/${trail.id}']) assert.ok(source.includes(href));
-  for (const caveat of ['not a safety assessment', 'Easy, short or paved does not mean accessible for everyone', 'Park-wide alerts do not certify this route is safe or open']) assert.ok(source.includes(caveat));
+  for (const caveat of ['not a safety assessment', 'Park-wide alerts do not certify this route is safe or open']) assert.ok(source.includes(caveat));
+  assert.match(routeSummary({ miles: 1 }), /Easy, short or paved does not mean accessible for everyone/);
+});
+
+test('visible group dial uses real factors and keeps unknown heat separate from official rating', () => {
+  const result = { score: 51, rating: 'Moderate', factors: [10, 70, null, 30, 20, null, null, null, 10, 50] };
+  const html = difficultyDial(result, { id: 'test' }, '<Our group>');
+  for (const text of ['Moderate for &lt;Our group&gt;', 'Steepness', 'Heat / feels-like', 'Unknown', 'Group fitness demand', 'Terrain / route fit', 'width:70%', 'width:30%', 'width:50%', 'Official trail rating: not verified', 'not a safety assessment']) assert.ok(html.includes(text), text);
+  assert.ok(!html.includes('<details'));
+  assert.ok(!difficultyDial(null, { id: 'test' }, '').includes('<line '));
 });

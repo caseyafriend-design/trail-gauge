@@ -10,5 +10,5 @@ export function routeSummary(trail) {
   ];
   return `<section aria-label="Route scope and access"><h2>Route at a glance</h2>
     <dl class="planning-facts">${facts.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
-    <p class="planning-note">The itinerary is not a live access or accessibility assessment. Confirm current restrictions and conditions with the park.</p></section>`;
+    <p class="planning-note">The itinerary is not a live access or accessibility assessment. Easy, short or paved does not mean accessible for everyone. Confirm current restrictions and conditions with the park.</p></section>`;
 }

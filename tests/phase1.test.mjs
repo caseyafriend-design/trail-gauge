@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { hasGeometry, loadCatalog } from '../dist/catalog.js';
 import { estimate } from '../dist/model.js';
 import { bestGroupFit, timeRange } from '../dist/planning.js';
-import { activeAlerts, fetchAlerts, fetchForecast, forecastFor, forecastMaxAge,
+import { activeAlerts, fetchAlerts, fetchForecast, forecastFor,
   forecastRequest, readForecast, startTimestamp, writeForecast } from '../dist/conditions.js';
 import { initialState, legacyStorageKey, loadState, migrateState, storageKey } from '../dist/state.js';
 
@@ -129,17 +129,7 @@ const now = Date.parse('2026-11-11T15:00:00Z');
 const plan = { date: '2026-11-12', start: '08:30' };
 const flattop = getTrail('flattop-mountain');
 const group = [{ fitness: 3, experience: 3 }];
-const fixtureStart = Date.parse('2026-11-12T14:00:00Z') / 1000;
-function hourlyFixture(temperature, apparent, probability, code, gust, length = 24) {
-  const series = value => Array(length).fill(value);
-  return { time: Array.from({ length }, (_, i) => fixtureStart + i * 3600), temperature_2m: series(temperature),
-    apparent_temperature: series(apparent), precipitation_probability: series(probability),
-    weather_code: series(code), wind_gusts_10m: series(gust) };
-}
-const snapshot = { fetchedAt: now, samples: [
-  { name: 'Trailhead', hourly: hourlyFixture(44, 42, 0, 1, 10) },
-  { name: 'Upper Flattop', hourly: hourlyFixture(25, 16, 85, 71, 40) }
-] };
+const snapshot = { fetchedAt: now, samples: [{ name: 'Old Open-Meteo cache' }] };
 
 test('date and time use the park zone and reject ambiguous and missing DST times', () => {
   assert.equal(startTimestamp(plan, 'America/Denver'), Date.parse('2026-11-12T15:30:00Z'));
@@ -148,32 +138,32 @@ test('date and time use the park zone and reject ambiguous and missing DST times
   assert.equal(startTimestamp({ date: '2026-03-08', start: '02:30' }, 'America/Denver'), null);
 });
 
-test('disabled forecasts ignore fresh, stale, failed and missing snapshots', () => {
-  for (const [cached, failure, clock] of [[snapshot, null, now], [snapshot, null, now + forecastMaxAge],
-    [snapshot, 'failed', now], [null, null, now]]) {
-    const result = forecastFor(flattop, group, plan, cached, failure, clock);
-    assert.deepEqual(result, { status: 'disabled', weather: null });
+test('NWS integration ignores old-provider snapshots and never treats missing weather as zero risk', () => {
+  for (const cached of [snapshot, null]) {
+    const result = forecastFor(flattop, group, plan, cached, null, now);
+    assert.equal(result.status, 'missing');
+    assert.equal(result.weather, null);
     assert.deepEqual(timeRange(flattop, group, result.weather), timeRange(flattop, group, null));
     assert.deepEqual(estimate(flattop, group, result.weather), estimate(flattop, group, null));
-    assert.equal(timeRange(flattop, group, result.weather).weatherKnown, false);
     for (const index of [2, 6, 7]) assert.equal(estimate(flattop, group, result.weather).factors[index], null);
   }
-  for (const date of ['2026-11-12', '2026-11-28', '2026-11-10']) {
-    assert.deepEqual(forecastRequest(flattop, { ...plan, date }, now), { status: 'disabled', weather: null });
-  }
+  assert.equal(forecastRequest(flattop, plan, now).status, 'eligible');
+  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-28' }, now).status, 'outside-horizon');
+  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-10' }, now).status, 'invalid-time');
+  assert.equal(forecastRequest(flattop, null, now).status, 'choose-time');
+  assert.equal(forecastFor(flattop, group, plan, null, 'failed', now).status, 'failed');
 });
 
-test('disabled provider rejects before any network request', async () => {
+test('NWS provider fails closed when hourly URL is absent', async () => {
   let calls = 0;
-  await assert.rejects(fetchForecast(flattop, async () => { calls++; return response(snapshot); }),
-    /Forecast unavailable: no commercially permitted weather provider is configured/);
-  assert.equal(calls, 0);
+  await assert.rejects(fetchForecast(flattop, async () => { calls++; return response({}); }), /hourly forecast link is missing/);
+  assert.equal(calls, 1);
 });
 
-test('disabled forecast cache never reads or writes browser storage', () => {
+test('versioned NWS forecast cache does not read or rewrite legacy weather', () => {
   const store = {
-    getItem() { assert.fail('must not read legacy weather'); },
-    setItem() { assert.fail('must not write weather'); },
+    getItem(key) { assert.match(key, /^trail-gauge-nws-hourly-v1-/); return JSON.stringify(snapshot); },
+    setItem() { assert.fail('must not write old-provider weather'); },
     removeItem() { assert.fail('must not delete legacy data'); }
   };
   assert.equal(readForecast(flattop, store), null);

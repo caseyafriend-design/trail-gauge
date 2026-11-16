@@ -1,7 +1,9 @@
 import { parks } from './catalog.js';
+import { timeRange } from './planning.js';
+import { fetchNws, nwsMaxAge, nwsVersion, pointURL, validSnapshot, windowForecast } from './nws.js';
 
-export const forecastSource = 'https://open-meteo.com/';
-export const forecastMaxAge = 60 * 60 * 1000;
+export const forecastSource = 'https://www.weather.gov/';
+export const forecastMaxAge = nwsMaxAge;
 export const alertsMaxAge = 15 * 60 * 1000;
 const hour = 60 * 60 * 1000;
 const day = 24 * hour;
@@ -36,15 +38,35 @@ export function formatLocal(timestamp, parkCode) {
   }).format(timestamp);
 }
 
-// Disabled at every entry point: free Open-Meteo is not licensed for commercial use.
-// Do not read old snapshots or call a provider until a permitted integration exists.
-export function readForecast() { return null; }
-export function writeForecast() {}
-export function forecastRequest() { return { status: 'disabled', weather: null }; }
-export function forecastFor() { return forecastRequest(); }
-export async function fetchForecast() {
-  throw new Error('Forecast unavailable: no commercially permitted weather provider is configured. Check official park weather.');
+const cacheKey = trail => `trail-gauge-${nwsVersion}-${trail.id}`;
+export function readForecast(trail, storage, now = Date.now()) {
+  try {
+    const value = JSON.parse(storage.getItem(cacheKey(trail)));
+    if (!validSnapshot(value) || value.point !== pointURL(trail) || value.expiresAt <= now || value.fetchedAt > now) return null;
+    return value;
+  } catch (error) { console.warn('NWS cache unavailable; a fresh forecast is required.', error.message); return null; }
 }
+export function writeForecast(trail, storage, snapshot, now = Date.now()) {
+  if (!validSnapshot(snapshot) || snapshot.point !== pointURL(trail) || snapshot.expiresAt <= now) return;
+  try { storage.setItem(cacheKey(trail), JSON.stringify(snapshot)); }
+  catch (error) { console.warn('NWS forecast could not be saved; it remains available in this tab.', error.message); }
+}
+export function forecastRequest(trail, plan, now = Date.now()) {
+  if (!plan?.date || !plan?.start) return { status: 'choose-time', weather: null };
+  const start = startTimestamp(plan, parks[trail.parkCode].timeZone);
+  if (start === null || start < now) return { status: 'invalid-time', weather: null };
+  if (start > now + 7 * day) return { status: 'outside-horizon', weather: null };
+  return { status: 'eligible', start, weather: null };
+}
+export function forecastFor(trail, group, plan, snapshot, status, now = Date.now(), context = {}) {
+  const request = forecastRequest(trail, plan, now);
+  if (request.status !== 'eligible') return request;
+  if (status === 'failed' || status === 'pending') return { status, weather: null };
+  if (snapshot && snapshot.point !== pointURL(trail)) return { status: 'missing', weather: null };
+  const end = request.start + timeRange(trail, group, null, context).high * 60000;
+  return windowForecast(snapshot, request.start, end, now);
+}
+export const fetchForecast = fetchNws;
 
 export const alertFeed = parkCode => `https://www.nps.gov/${parkCode}/park-alerts-${parkCode}.json`;
 

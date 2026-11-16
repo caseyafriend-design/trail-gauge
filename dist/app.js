@@ -1,3 +1,6 @@
+import { difficultyDial } from './difficulty-view.js';
+import { photoGallery } from './photo-gallery.js';
+import { forecastView } from './forecast-view.js';
 import { explorePage, mountExplore, preferenceButtons, preferenceKey } from './explore.js';
 import { routeSummary } from './route-summary.js';
 import { defaultTrip, packingCategories, packingSuggestions, tripKey } from './packing.js';
@@ -11,12 +14,12 @@ import { parseMapView } from './us-map-data.js';
 import { mountUSSearch, mountUSSegment, usSearchPage, usSegmentPage } from './us-trail-pages.js';
 import { searchOptions } from './us-trails.js';
 import { regions, parks, legacyTrails, hasGeometry, loadCatalog } from './catalog.js';
-import { factorNames, factorWeights, estimate, weatherStress } from './model.js';
+import { factorNames, factorWeights, estimate } from './model.js';
 import { estimatedTime, groupDistance, groupTips, bestGroupFit, timeRange, groupFit, duration } from './planning.js';
 import { mountMap, removeMap } from './map.js';
 import { escapeHtml, historyPage, profilePage, friendsPage, groupPage } from './community.js';
 import { loadState, storageKey } from './state.js';
-import { alertsMaxAge, fetchAlerts, fetchForecast, forecastFor, forecastMaxAge, forecastRequest, forecastSource,
+import { alertsMaxAge, fetchAlerts, fetchForecast, forecastFor, forecastRequest,
   formatLocal, readForecast, writeForecast } from './conditions.js';
 
 const screen = document.querySelector('#screen');
@@ -160,22 +163,14 @@ function planningCard(trail) {
       ${mapPanel([trail], true)}
       <p class="planning-note"><a href="${escapeHtml(trail.geometryQuery)}" target="_blank" rel="noopener">NPS route geometry ↗</a></p>
     </section>
-    <details class="form-details" open><summary>Surface, crossings and access</summary>
-      <dl class="planning-facts">
-        <div><dt>Surface</dt><dd>${trail.surface ?? 'Unavailable'}</dd></div>
-        <div><dt>Crossings</dt><dd>${trail.crossings ?? 'Unverified'}</dd></div>
-        <div><dt>Trailhead</dt><dd>${trail.trailheadName}</dd></div>
-        <div><dt>Typical grade</dt><dd>${trail.typicalGrade == null ? 'Unavailable' : trail.typicalGrade + '%'}</dd></div>
-      </dl>
-      <p class="planning-note">${trail.access} ${trail.gainNote}</p>
+    <details class="form-details"><summary>Grade, sources and elevation provenance</summary>
+      <dl class="planning-facts"><div><dt>Typical grade</dt><dd>${trail.typicalGrade == null ? 'Unavailable' : trail.typicalGrade + '%'}</dd></div></dl>
+      <p class="planning-note">${escapeHtml(trail.gainNote)}</p>
       <p class="planning-note"><a href="${trail.statsSource}" target="_blank" rel="noopener">NPS trail information ↗</a>
         ${trail.guideSource ? ` · <a href="${trail.guideSource}" target="_blank" rel="noopener">NPS route guide ↗</a>` : ''}
         ${trail.upperPoint ? ` · <a href="${trail.upperPoint.source}" target="_blank" rel="noopener">USGS elevation sample ↗</a>` : ''}</p>
     </details>
-    ${trail.photo ? `<figure class="trail-photo">
-      <img src="photos/${trail.id}.jpg" alt="${escapeHtml(trail.photo.alt)}" loading="lazy" data-trail-photo>
-      <figcaption>Photo · <a href="${trail.photo.source}" target="_blank" rel="noopener">${trail.photo.credit} ↗</a> · Public domain</figcaption>
-    </figure>` : '<p class="planning-note">A photo with verified reuse rights is unavailable.</p>'}
+    ${photoGallery(trail)}
     <div class="park-conditions" id="park-alerts">${alertsPanel(trail.parkCode)}</div>
   </section>`;
 }
@@ -239,7 +234,7 @@ function comparePage() {
       <form id="fit-form" class="fields">
         <label class="full-width">Time budget (minutes)<input name="budget" type="number" min="5" max="10080" required value="${escapeHtml(budget)}"></label>
         ${planFields()}
-        <p class="planning-note full-width">Start time is local to each trail. Forecast unavailable; estimates exclude weather.</p>
+        <p class="planning-note full-width">Start time is local to each trail. NWS air forecasts are shown separately; estimates exclude weather.</p>
         <button class="button" type="submit">Update recommendation</button>
         <p class="planning-note full-width" data-plan-status role="status"></p>
       </form>
@@ -281,19 +276,6 @@ function mapPage(region) {
     </section>`;
 }
 
-function gauge(score) {
-  const angle = score === undefined ? 180 : 180 - score * 1.8;
-  const radians = angle * Math.PI / 180;
-  const x = 120 + 74 * Math.cos(radians);
-  const y = 108 - 74 * Math.sin(radians);
-  return `<svg class="gauge" viewBox="0 0 240 123" aria-hidden="true">
-    <path d="M24 108a96 96 0 0 1 192 0" pathLength="100" fill="none" stroke="#ef7871" stroke-width="15"/>
-    <path d="M24 108a96 96 0 0 1 192 0" pathLength="100" fill="none" stroke="#f5b648" stroke-width="15" stroke-dasharray="68 100"/>
-    <path d="M24 108a96 96 0 0 1 192 0" pathLength="100" fill="none" stroke="#91bc5a" stroke-width="15" stroke-dasharray="44 100"/>
-    ${score === undefined ? '' : `<line x1="120" y1="108" x2="${x}" y2="${y}" stroke="#e1e5d9" stroke-width="4" stroke-linecap="round"/><circle cx="120" cy="108" r="7" fill="#e1e5d9"/>`}
-    </svg>`;
-}
-
 function difficultyPanel(trail) {
   const weather = weatherFor(trail);
   const result = resultFor(trail);
@@ -304,27 +286,19 @@ function difficultyPanel(trail) {
       <div><dt>Estimated time</dt><dd>${timeFor(trail)}</dd></div>
       <div><dt>Group difficulty</dt><dd class="${result?.rating.toLowerCase() ?? ''}">${result?.rating ?? 'Choose hikers'}</dd></div>
     </dl>
-    <div class="fit-scope"><p class="planning-note">Planning estimate only: terrain, group and time budget. Weather unavailable; conditions may change the fit.</p>
-      <p class="planning-note">${escapeHtml(trail.access ?? 'Access details unverified.')} ${escapeHtml(trail.crossings ?? 'Crossings unverified.')}</p>
-      <p class="planning-note">Easy, short or paved does not mean accessible for everyone. <a href="${trail.statsSource}" target="_blank" rel="noopener">Official route/access details ↗</a> ·
-        <a href="${parks[trail.parkCode].conditions}" target="_blank" rel="noopener">Check current park conditions ↗</a></p>
-      <p class="planning-note">Park-wide alerts do not certify this route is safe or open.</p></div>
+    ${difficultyDial(result, trail, state.groupName)}
     ${result ? `<p class="fit-message ${fit.issues.length ? 'plan-alert' : ''}">${fit.issues.length
       ? `<strong>${result.limits.length ? 'Firm limit' : 'Check the fit'}</strong> · ${escapeHtml(fit.issues.join(' · '))}`
       : 'Within your terrain, group and time settings — not a safety assessment.'}</p>
-      <details class="form-details"><summary>What affects group difficulty?</summary>
-        ${gauge(result.score)}
+      ` : '<p class="planning-note">Choose who’s hiking to see the group recommendation.</p>'}
+      <details class="form-details"><summary>Difficulty, timing &amp; altitude</summary>
         <p class="reason">${weather ? 'Includes the forecast.' : 'Terrain and group only.'}
-          ${result.drivers.length ? ' Biggest contributors are ' + result.drivers.join(' and ') + '.' : ''}</p>
-        ${factorBreakdown(result)}</details>`
-      : '<p class="planning-note">Choose who’s hiking to see the group recommendation.</p>'}`;
+          ${result?.drivers.length ? ' Biggest contributors are ' + result.drivers.join(' and ') + '.' : ''}</p>
+        ${result ? factorBreakdown(result) : ''}<div id="trail-planning">${planningFacts(trail)}</div></details>`;
 }
 
 function forecastPanel(trail) {
-  return `<p role="status">Forecast unavailable. No commercially permitted weather provider is configured.</p>
-    <p>Time and difficulty use terrain and group only, not current weather. Unknown weather does not mean zero weather risk.</p>
-    <p class="planning-note"><a href="${parks[trail.parkCode].conditions}" target="_blank" rel="noopener">Check official park conditions and weather ↗</a> ·
-      <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">Provider terms ↗</a></p>`;
+  return forecastView(trail, conditionsFor(trail), parks[trail.parkCode].conditions, localSnapshot(trail).error);
 }
 
 function alertsPanel(parkCode) {
@@ -358,8 +332,12 @@ function trailPage(trail) {
     <p class="compare-status" role="status"></p>
     <div class="detail-links"><a class="button" href="#packing/${trail.id}">Plan &amp; pack</a>
       <a class="button secondary" href="#group/${trail.id}">Edit group · ${size} ${size === 1 ? 'hiker' : 'hikers'}</a></div>
-    <details class="form-details"><summary>Moving time, breaks and altitude</summary><div id="trail-planning">${planningFacts(trail)}</div></details>
-    <details class="form-details" id="forecast" tabindex="-1"><summary>Hike forecast</summary>
+    <details class="form-details" id="forecast" tabindex="-1" open><summary>Hike forecast</summary>
+      <form id="weather-form" class="fit-form">
+        <label>Hike date<input name="date" type="date" value="${escapeHtml(state.hikePlan?.date ?? '')}"></label>
+        <label>Start time · ${escapeHtml(parks[trail.parkCode].timeZone)}<input name="start" type="time" value="${escapeHtml(state.hikePlan?.start ?? '')}"></label>
+        <button class="button" type="submit">Update forecast</button><p data-plan-status role="status"></p>
+      </form>
       <div id="forecast-status">${forecastPanel(trail)}</div>
     </details>
     <div class="trail-actions">
@@ -427,7 +405,7 @@ function syncLive() {
   const expiration = watched.flatMap(item => {
     const snapshot = localSnapshot(item).snapshot;
     const request = forecastRequest(item, state.hikePlan);
-    return [snapshot?.fetchedAt + forecastMaxAge, request.start + 60000];
+    return [snapshot?.expiresAt, snapshot?.issuedAt + 12 * 60 * 60 * 1000, request.start + 1];
   });
   if (page === 'trail' && watched.length) expiration.push(parkAlerts.get(trail.parkCode)?.snapshot?.fetchedAt + alertsMaxAge);
   const now = Date.now();
@@ -438,7 +416,7 @@ function syncLive() {
 async function refreshForecast(trail, force = false) {
   if (forecastRequest(trail, state.hikePlan).status !== 'eligible' || forecastRequests.has(trail.id)) return;
   const entry = localSnapshot(trail);
-  if (!force && entry.status !== 'failed' && entry.snapshot && Date.now() - entry.snapshot.fetchedAt < forecastMaxAge) return;
+  if (!force && entry.status !== 'failed' && entry.snapshot && Date.now() < entry.snapshot.expiresAt) return;
   entry.status = 'pending';
   const pending = fetchForecast(trail);
   forecastRequests.set(trail.id, pending);
@@ -447,8 +425,11 @@ async function refreshForecast(trail, force = false) {
     entry.snapshot = await pending;
     writeForecast(trail, localStorage, entry.snapshot);
     entry.status = 'ready';
-  } catch {
+    entry.error = null;
+  } catch (error) {
     entry.status = 'failed';
+    entry.error = error.message;
+    console.warn('NWS forecast request failed', trail.id, error.message);
   } finally {
     forecastRequests.delete(trail.id);
     syncLive();
@@ -581,13 +562,20 @@ document.querySelector('#reminder-banner button').addEventListener('click', () =
 
 screen.addEventListener('error', event => {
   if (!event.target.matches?.('[data-trail-photo]')) return;
-  const replacement = document.createElement('p');
-  replacement.className = 'planning-note';
-  replacement.textContent = 'Trail photo unavailable.';
-  event.target.closest('figure')?.replaceWith(replacement);
+  event.target.hidden = true;
+  event.target.closest('figure').querySelector('[data-photo-error]').hidden = false;
+  console.warn('Trail Gauge photo unavailable:', event.target.src);
 }, true);
 
 screen.addEventListener('click', event => {
+  const photoStep = event.target.closest('[data-photo-step]');
+  if (photoStep) {
+    const gallery = photoStep.closest('[data-gallery]');
+    const trail = trailFor(gallery.dataset.gallery);
+    gallery.outerHTML = photoGallery(trail, Number(gallery.dataset.index) + Number(photoStep.dataset.photoStep));
+    screen.querySelector(`[data-gallery="${trail.id}"] [data-photo-step="${photoStep.dataset.photoStep}"]`).focus();
+    return;
+  }
   const packingJump = event.target.closest('[data-pack-jump]');
   if (packingJump) {
     event.preventDefault();
