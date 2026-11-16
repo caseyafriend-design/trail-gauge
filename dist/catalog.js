@@ -1,4 +1,5 @@
 import { trailNotes } from './trail-notes.js';
+import { parkZones, publicationIssues } from './publication.js';
 
 export const regions = [
   { id: 'utah', name: 'Utah', description: 'Verified routes in Zion National Park.' },
@@ -10,13 +11,13 @@ export const regions = [
 ];
 
 export const parks = {
-  zion: { timeZone: 'America/Denver', timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/zion/planyourvisit/conditions.htm' },
+  zion: { timeZone: parkZones.zion, timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/zion/planyourvisit/conditions.htm' },
   brca: { timeZone: 'America/Denver', timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/brca/planyourvisit/conditions.htm' },
-  romo: { timeZone: 'America/Denver', timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/romo/planyourvisit/conditions.htm' },
-  yose: { timeZone: 'America/Los_Angeles', timeLabel: 'Pacific Time', conditions: 'https://www.nps.gov/yose/planyourvisit/conditions.htm' },
-  shen: { timeZone: 'America/New_York', timeLabel: 'Eastern Time', conditions: 'https://www.nps.gov/shen/planyourvisit/conditions.htm' },
-  sagu: { timeZone: 'America/Phoenix', timeLabel: 'Arizona time (MST year-round)', conditions: 'https://www.nps.gov/sagu/planyourvisit/conditions.htm' },
-  olym: { timeZone: 'America/Los_Angeles', timeLabel: 'Pacific Time', conditions: 'https://www.nps.gov/olym/planyourvisit/conditions.htm' }
+  romo: { timeZone: parkZones.romo, timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/romo/planyourvisit/conditions.htm' },
+  yose: { timeZone: parkZones.yose, timeLabel: 'Pacific Time', conditions: 'https://www.nps.gov/yose/planyourvisit/conditions.htm' },
+  shen: { timeZone: parkZones.shen, timeLabel: 'Eastern Time', conditions: 'https://www.nps.gov/shen/planyourvisit/conditions.htm' },
+  sagu: { timeZone: parkZones.sagu, timeLabel: 'Arizona time (MST year-round)', conditions: 'https://www.nps.gov/sagu/planyourvisit/conditions.htm' },
+  olym: { timeZone: parkZones.olym, timeLabel: 'Pacific Time', conditions: 'https://www.nps.gov/olym/planyourvisit/conditions.htm' }
 };
 
 export const legacyTrails = {
@@ -29,6 +30,9 @@ export const legacyTrails = {
   'flattop-mountain': { name: 'Flattop Mountain', parkCode: 'romo' },
   'hall-of-mosses': { name: 'Hall of Mosses', parkCode: 'olym' },
   'rialto-beach': { name: 'Rialto Beach to Hole-in-the-Wall', parkCode: 'olym' },
+  'lower-yosemite-fall': { name: 'Lower Yosemite Fall Trail', parkCode: 'yose' },
+  limberlost: { name: 'Limberlost Trail', parkCode: 'shen' },
+  'desert-discovery': { name: 'Desert Discovery Trail', parkCode: 'sagu' },
   'cape-alava': { name: 'Cape Alava', parkCode: 'olym' }
 };
 
@@ -43,15 +47,26 @@ export function hasGeometry(trail) {
     && geometry.coordinates.length > 0 && geometry.coordinates.every(validLine);
 }
 
-export async function loadCatalog(fetcher = fetch) {
+export async function loadCatalog(fetcher = fetch, report = message => console.error(message)) {
   try {
     const response = await fetcher('./routes.geojson');
-    if (!response.ok) return [];
+    if (!response.ok) throw new Error('Route snapshot request failed');
     const data = await response.json();
+    const seen = new Set();
     return data.features.map(({ properties, geometry }) => ({ ...properties, ...trailNotes[properties.id], geometry }))
-      .filter(trail => parks[trail.parkCode] && regions.some(region => region.id === trail.region)
-        && Number.isFinite(trail.miles) && Number.isFinite(trail.gain));
-  } catch {
+      .filter(trail => {
+        const issues = publicationIssues(trail);
+        if (!parks[trail.parkCode] || !regions.some(region => region.id === trail.region)) issues.push('Unknown park region');
+        if (seen.has(trail.parkCode)) issues.push('Duplicate park itinerary');
+        if (issues.length) {
+          report(`Route ${trail.id} is archived: ${issues.join('; ')}. Review official sources before publication.`);
+          return false;
+        }
+        seen.add(trail.parkCode);
+        return true;
+      });
+  } catch (error) {
+    report(`Catalog unavailable: ${error.message}. Reload or consult the official park trail guides.`);
     return [];
   }
 }

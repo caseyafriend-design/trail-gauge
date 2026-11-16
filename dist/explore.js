@@ -1,15 +1,9 @@
 import { escapeHtml, selectInput, textInput } from './forms.js';
-import { nearbyTrails, searchParams } from './us-trails.js';
+import { milesBetween } from './publication.js';
 
 export const preferenceKey = (trail, source = 'verified') => source + ':' + trail.id;
 const detailLink = (trail, source) => (source === 'usgs' ? '#us-trail/' : '#trail/') + encodeURIComponent(trail.id);
-const distanceInMiles = ([lon, lat], position) => {
-  const toRadians = value => value * Math.PI / 180;
-  const p = toRadians(position.latitude);
-  const q = toRadians(lat);
-  const term = Math.sin((q - p) / 2) ** 2 + Math.cos(p) * Math.cos(q) * Math.sin(toRadians(lon - position.longitude) / 2) ** 2;
-  return 3959 * 2 * Math.asin(Math.sqrt(Math.min(1, term)));
-};
+const distanceInMiles = (point, position) => milesBetween(point, [position.longitude, position.latitude]);
 
 export function preferenceButtons(trail, state, source = 'verified') {
   const key = preferenceKey(trail, source);
@@ -22,7 +16,7 @@ export function preferenceButtons(trail, state, source = 'verified') {
 
 export function explorePage(state, trails, params) {
   const options = { '': 'All parks', ...Object.fromEntries(trails.map(trail => [trail.parkCode, trail.park])) };
-  return `<div class="intro explore-heading"><div><h1>Explore trails</h1><p>Find a hike that fits your group.</p></div>
+  return `<div class="intro explore-heading"><div><h1>Explore trails</h1><p>One reviewed hike in each of six U.S. national parks. Find a hike that fits your group.</p></div>
     <a class="button secondary" href="#map">Open trail map</a></div>
     ${state.people.length ? '' : `<section class="card explore-setup"><div><h2>Set up your hiking profile</h2>
       <p>A nickname, fitness, and experience are enough to get group estimates.</p></div>
@@ -34,7 +28,7 @@ export function explorePage(state, trails, params) {
       ${selectInput('fit', 'Group fit', params.get('fit'), { '': 'Any fit', fits: 'Fits my group', easy: 'Easy', moderate: 'Moderate', hard: 'Hard', limit: 'Has a limit or concern' })}
       <div class="explore-nearby"><button class="compare-toggle" type="button" data-nearby>Use my location</button>
         <button class="compare-toggle" type="button" data-clear-nearby hidden>Clear nearby</button>
-        <a class="compare-toggle" data-national-search href="#us-trails">Browse U.S. trail segments</a></div>
+</div>
       <p class="planning-note full-width" data-nearby-status role="status"></p>
     </form>
     <div class="explore-tabs" role="group" aria-label="Trail lists">
@@ -55,13 +49,10 @@ export function mountExplore(screen, state, trails, group, getFit, renderCard, s
   const clear = screen.querySelector('[data-clear-nearby]');
   let tab = screen.querySelector('[data-explore-tab][aria-pressed=true]')?.dataset.exploreTab ?? 'all';
   let position;
-  let segments = [];
-  let nearbyRequest;
 
   function draw() {
     const { query, park, distance, fit } = filters.elements;
     const text = query.value.trim().toLowerCase();
-    screen.querySelector('[data-national-search]').href = '#us-trails' + searchParams({ query: query.value.trim() });
     for (const button of screen.querySelectorAll('[data-explore-tab]')) {
       button.setAttribute('aria-pressed', String(button.dataset.exploreTab === tab));
     }
@@ -82,19 +73,15 @@ export function mountExplore(screen, state, trails, group, getFit, renderCard, s
       if (nearbyMiles != null && nearbyMiles > 40 && tab === 'all') return [];
       return [{ trail, nearbyMiles }];
     }).sort((a, b) => (a.nearbyMiles ?? 0) - (b.nearbyMiles ?? 0));
-    const savedSegments = chosen?.filter(item => item.source === 'usgs' && (!text || item.name.toLowerCase().includes(text))) ?? [];
+    const savedSegments = chosen?.filter(item => !trails.some(trail => preferenceKey(trail) === item.key) && (!text || item.name.toLowerCase().includes(text))) ?? [];
     const heading = tab === 'all' ? 'Verified hiking routes' : tab === 'favorites' ? 'Favorite trails' : 'Trails marked Would skip';
     results.innerHTML = `<h2>${heading}</h2>${visible.length || savedSegments.length ? `<div class="explore-grid">
       ${visible.map(item => renderCard(item.trail, item.nearbyMiles)).join('')}
-      ${savedSegments.map(trail => `<article class="trail-card"><a class="trail-info" href="${detailLink(trail, 'usgs')}"><h3>${escapeHtml(trail.name)}</h3></a>
-        <p>USGS trail segment</p><div class="trail-actions">${preferenceButtons(trail, state, 'usgs')}</div></article>`).join('')}</div>`
+      ${savedSegments.map(trail => `<article class="trail-card"><a class="trail-info" href="${detailLink(trail, trail.source)}"><h3>${escapeHtml(trail.name)}</h3></a>
+        <p>Archived saved route · outside the current catalog</p><div class="trail-actions">${preferenceButtons(trail, state, trail.source)}</div></article>`).join('')}</div>`
       : `<p class="card">${fit.value && !group.length ? 'Choose hikers to filter by group fit.'
-        : tab !== 'all' && !chosen?.length ? 'This list is empty.' : 'No verified hikes match. Try changing the filters or browse U.S. trail segments.'}</p>`}`;
-    const mapped = segments.filter(trail => !state.skipped.some(item => item.key === preferenceKey(trail, 'usgs')));
-    nearResults.innerHTML = position && tab === 'all' && mapped.length ? `<h2>Nearby USGS segments</h2><p class="planning-note">Mapped segments within about 40 miles of the search area.</p>
-      <div class="explore-grid">${mapped.map(trail => `<article class="trail-card"><a class="trail-info" href="${detailLink(trail, 'usgs')}"><h3>${escapeHtml(trail.name)}</h3></a>
-        <p>${trail.miles == null ? 'Segment length unavailable' : trail.miles.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' mi mapped segment'}</p>
-        <div class="trail-actions">${preferenceButtons(trail, state, 'usgs')}</div></article>`).join('')}</div>` : '';
+        : tab !== 'all' && !chosen?.length ? 'This list is empty.' : 'No published hikes match. Try changing the park or distance filters.'}</p>`}`;
+    nearResults.innerHTML = '';
   }
 
   screen.addEventListener('trail-preferences', draw, { signal });
@@ -104,9 +91,7 @@ export function mountExplore(screen, state, trails, group, getFit, renderCard, s
     button.addEventListener('click', () => { tab = button.dataset.exploreTab; draw(); });
   }
   clear.addEventListener('click', () => {
-    nearbyRequest?.abort();
     position = undefined;
-    segments = [];
     clear.hidden = true;
     locate.disabled = false;
     status.textContent = '';
@@ -114,35 +99,24 @@ export function mountExplore(screen, state, trails, group, getFit, renderCard, s
   });
   locate.addEventListener('click', () => {
     if (!navigator.geolocation) {
-      status.textContent = 'Nearby discovery is unavailable here. Choose a park above or browse by state.';
+      status.textContent = 'Nearby discovery is unavailable here. Choose a covered park above.';
       return;
     }
     locate.disabled = true;
     status.textContent = 'Finding nearby trails…';
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       if (signal.aborted) return;
-      const controller = new AbortController();
-      nearbyRequest = controller;
       position = { latitude: coords.latitude, longitude: coords.longitude };
       tab = 'all';
       clear.hidden = false;
+      locate.disabled = false;
+      status.textContent = 'Showing curated park hikes within 40 miles. Your location stays on this page.';
       draw();
-      try {
-        const result = await nearbyTrails(position, AbortSignal.any([signal, controller.signal]));
-        if (signal.aborted || controller.signal.aborted) return;
-        segments = result;
-        status.textContent = segments.length ? 'Showing trails in your approximate area.' : 'No USGS segments found nearby. You can still choose a park.';
-        draw();
-      } catch {
-        if (!signal.aborted && !controller.signal.aborted) status.textContent = 'Nearby USGS results are unavailable. You can still choose a park.';
-      } finally {
-        if (!signal.aborted) locate.disabled = false;
-      }
     }, error => {
       if (signal.aborted) return;
       locate.disabled = false;
-      status.textContent = error.code === 1 ? 'Location permission was denied. Choose a park above or browse by state.'
-        : 'Your location is unavailable. Choose a park above or browse by state.';
+      status.textContent = error.code === 1 ? 'Location permission was denied. Choose a covered park above.'
+        : 'Your location is unavailable. Choose a covered park above.';
     }, { timeout: 12000, maximumAge: 120000 });
   });
   draw();
