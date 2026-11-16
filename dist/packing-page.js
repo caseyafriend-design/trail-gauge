@@ -154,7 +154,6 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
         </details>
         <button class="compare-toggle" type="submit">Save trip settings</button>
       </form>
-    </section>
     <div id="packing-forecast-panels">${packingForecastPanels(suggestions, plan, trip, start, parkConditions)}</div></details>
     <section class="card pack-section"><h2>Optional reminders</h2>
       <p class="planning-note">A reminder appears in this tab while it is open.</p>

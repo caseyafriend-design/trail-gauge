@@ -148,56 +148,36 @@ test('date and time use the park zone and reject ambiguous and missing DST times
   assert.equal(startTimestamp({ date: '2026-03-08', start: '02:30' }, 'America/Denver'), null);
 });
 
-test('uses both location samples, expands the forecast window and explains higher time and score', () => {
-  const live = forecastFor(flattop, group, plan, snapshot, null, now);
-  assert.equal(live.status, 'ready');
-  assert.equal(live.samples.length, 2);
-  assert.equal(live.samples[0].tempMax, 44);
-  assert.equal(live.samples[1].tempMax, 25);
-  assert.equal(live.samples[1].hours[0].probability, null);
-  assert.equal(live.weather.probabilityMax, 85);
-  assert.equal(live.weather.gustMax, 40);
-  assert.ok(live.weather.types.includes('Snow'));
-  const [before, after] = [timeRange(flattop, group, null), timeRange(flattop, group, live.weather)];
-  assert.ok(after.high > before.high);
-  assert.equal(live.end - live.start, after.high * 60000);
-  assert.ok(estimate(flattop, group, live.weather).score > estimate(flattop, group, null).score);
+test('disabled forecasts ignore fresh, stale, failed and missing snapshots', () => {
+  for (const [cached, failure, clock] of [[snapshot, null, now], [snapshot, null, now + forecastMaxAge],
+    [snapshot, 'failed', now], [null, null, now]]) {
+    const result = forecastFor(flattop, group, plan, cached, failure, clock);
+    assert.deepEqual(result, { status: 'disabled', weather: null });
+    assert.deepEqual(timeRange(flattop, group, result.weather), timeRange(flattop, group, null));
+    assert.deepEqual(estimate(flattop, group, result.weather), estimate(flattop, group, null));
+    assert.equal(timeRange(flattop, group, result.weather).weatherKnown, false);
+    for (const index of [2, 6, 7]) assert.equal(estimate(flattop, group, result.weather).factors[index], null);
+  }
+  for (const date of ['2026-11-12', '2026-11-28', '2026-11-10']) {
+    assert.deepEqual(forecastRequest(flattop, { ...plan, date }, now), { status: 'disabled', weather: null });
+  }
 });
 
-test('failure, stale cache, partial forecast and out-of-window coverage never enter the estimate', async () => {
-  await assert.rejects(fetchForecast(flattop, async () => ({ ok: false })));
-  await assert.rejects(fetchForecast(flattop, async () => response([{ hourly: {} }])));
-  assert.equal(forecastFor(flattop, group, plan, null, 'failed', now).status, 'failed');
-  const stale = forecastFor(flattop, group, plan, snapshot, null, now + forecastMaxAge);
-  assert.equal(stale.status, 'stale');
-  assert.equal(stale.weather, null);
-  assert.equal(stale.samples.length, 2);
-  assert.equal(forecastFor(flattop, group, plan, snapshot, 'failed', now).status, 'stale');
-  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-28' }, now).status, 'outside');
-  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-10' }, now).status, 'outside');
-  const missing = structuredClone(snapshot);
-  missing.samples[1].hourly.weather_code.fill(null);
-  assert.equal(forecastFor(flattop, group, plan, missing, null, now).status, 'coverage');
-  const tooShort = structuredClone(snapshot);
-  tooShort.samples[1].hourly = hourlyFixture(25, 16, 85, 71, 40, 5);
-  assert.equal(forecastFor(flattop, group, plan, tooShort, null, now).status, 'outside');
+test('disabled provider rejects before any network request', async () => {
+  let calls = 0;
+  await assert.rejects(fetchForecast(flattop, async () => { calls++; return response(snapshot); }),
+    /Forecast unavailable: no commercially permitted weather provider is configured/);
+  assert.equal(calls, 0);
 });
 
-test('provider request includes both public points and cache round trips without personal fields', async () => {
-  const cached = await fetchForecast(flattop, async raw => {
-    const url = new URL(raw);
-    assert.equal(url.origin, 'https://api.open-meteo.com');
-    assert.equal(url.searchParams.get('latitude'), '40.3119986,40.3089462');
-    assert.equal(url.searchParams.get('elevation'), '2888,3754');
-    assert.equal(url.searchParams.get('timeformat'), 'unixtime');
-    assert.deepEqual([...url.searchParams.keys()].sort(),
-      ['latitude', 'longitude', 'elevation', 'hourly', 'temperature_unit', 'wind_speed_unit', 'timeformat', 'timezone', 'forecast_days'].sort());
-    return response(snapshot.samples.map(({ hourly }) => ({ hourly })));
-  });
-  const store = memory();
-  writeForecast(flattop, store, cached);
-  assert.deepEqual(readForecast(flattop, store), cached);
-  assert.equal(readForecast(getTrail('bear-lake'), store), null);
+test('disabled forecast cache never reads or writes browser storage', () => {
+  const store = {
+    getItem() { assert.fail('must not read legacy weather'); },
+    setItem() { assert.fail('must not write weather'); },
+    removeItem() { assert.fail('must not delete legacy data'); }
+  };
+  assert.equal(readForecast(flattop, store), null);
+  writeForecast(flattop, store, snapshot);
 });
 
 test('official park alert filter keeps active notices and rejects malformed provider responses', async () => {

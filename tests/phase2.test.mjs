@@ -4,7 +4,8 @@ import { bestGroupFit, timeRange } from '../dist/planning.js';
 import { altitudeNotes, comparableHikes } from '../dist/personalization.js';
 import { defaultTrip, packingSuggestions, tripKey } from '../dist/packing.js';
 import { readPlanningProfile } from '../dist/profile-planning.js';
-import { reviewRecord } from '../dist/reviews.js';
+import { reviewPage, reviewRecord } from '../dist/reviews.js';
+import { packingPage } from '../dist/packing-page.js';
 import { nearbyTrails } from '../dist/us-trails.js';
 
 const hiker = { id: 'you', name: 'Test hiker', fitness: 2, experience: 2 };
@@ -106,4 +107,36 @@ test('nearby search sends rounded coordinates with no private profile fields', a
       assert.doesNotMatch(request.body.toString(), /Private|diet|name%3DPrivate/);
       return { ok: true, json: async () => ({ features: [] }) };
     });
+});
+
+test('unanswered subjective review fields stay blank and saved answers survive editing', () => {
+  const html = reviewPage(trail, null, [hiker], '2026-11-12', 'Moderate', true);
+  for (const name of ['effort', 'factor', 'conditions', 'sun']) {
+    const select = html.match(new RegExp('<select name="' + name + '">([\\s\\S]*?)</select>'))?.[1];
+    assert.ok(select, name);
+    assert.match(select, /^<option value="" selected>I don’t know<\/option>/);
+  }
+  const empty = reviewRecord(new FormData());
+  for (const name of ['effort', 'rating', 'factor', 'conditions', 'sun']) assert.equal(empty[name], '');
+  const data = new FormData();
+  for (const [key, value] of Object.entries({ effort: 'hard', factor: 'Other', conditions: 'hot', sun: 'exposed' })) data.set(key, value);
+  const saved = reviewRecord(data);
+  const edited = reviewPage(trail, saved, [hiker], '2026-11-12', 'Moderate', true);
+  for (const value of ['hard', 'Other', 'hot', 'exposed']) assert.ok(edited.includes('value="' + value + '" selected'));
+  assert.equal(saved.rating, 'Hard');
+  const legacy = reviewPage(trail, { rating: 'Easy', factor: 'Old observation' }, [hiker], '2026-11-12', 'Moderate', true);
+  assert.match(legacy, /value="easy" selected/);
+  assert.match(legacy, /value="Old observation" selected/);
+});
+
+test('packing starts with saved checklist and keeps estimates in closed settings', () => {
+  const time = timeRange(trail, [hiker], null);
+  const suggestions = packingSuggestions(trail, [hiker], time, null, defaultTrip, '09:00');
+  const html = packingPage(trail, [hiker], defaultTrip, { entries: [{ id: 'item', name: 'My item', category: 'gear', packed: true }] }, suggestions, time, '09:00', 'https://www.nps.gov/');
+  assert.ok(html.indexOf('id="packing-checklist"') < html.indexOf('id="packing-settings"'));
+  assert.match(html, /<details class="card pack-section" id="packing-settings">/);
+  assert.match(html, /value="item"[^>]* checked/);
+  assert.match(html, /Forecast unavailable; packing estimates exclude weather/);
+  assert.match(html, /id="packing-forecast-panels"/);
+  assert.equal((html.match(/<details\b/g) ?? []).length, (html.match(/<\/details>/g) ?? []).length);
 });
