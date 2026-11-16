@@ -78,6 +78,8 @@ The first successful v2 load on the same origin migrates `trail-gauge-v1` into `
 
 ## Verification
 
+The installed-Chrome flow check is `TRAIL_GAUGE_EVIDENCE=<existing evidence directory> node scripts/browser-check.mjs` (macOS, Node 22+). It serves this checkout on an isolated loopback origin and uses a new disposable Chrome profile, never the customer's browser storage. It checks desktop/mobile keyboard disclosure, both packing shortcuts with focus and scrolling, checklist persistence, unanswered/explicit reviews, and horizontal overflow; screenshots and runtime diagnostics go to the evidence directory. `TRAIL_GAUGE_ROOT` can point to an archived baseline's `dist` directory for failure reproduction. Chrome Enter injection includes its carriage-return text so native summary activation is exercised rather than bypassed.
+
 ```sh
 node --test tests/*.test.mjs
 git diff --check

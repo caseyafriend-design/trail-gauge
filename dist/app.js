@@ -588,6 +588,17 @@ screen.addEventListener('error', event => {
 }, true);
 
 screen.addEventListener('click', event => {
+  const packingJump = event.target.closest('[data-pack-jump]');
+  if (packingJump) {
+    event.preventDefault();
+    const section = document.getElementById(packingJump.dataset.packJump);
+    if (section) {
+      if (section.tagName === 'DETAILS') section.open = true;
+      section.scrollIntoView({ block: 'start' });
+      section.focus({ preventScroll: true });
+    }
+    return;
+  }
   const button = event.target.closest('button');
   if (!button) return;
   const { page, id, anchor, trail } = screenRoute();

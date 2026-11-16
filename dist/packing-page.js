@@ -137,7 +137,7 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
         <button class="compare-toggle" type="submit">Add item</button>
       </form>
     </section>
-    <details class="card pack-section" id="packing-settings"><summary>Trip settings, refills and estimates</summary><h2>Trip and refill plan</h2>
+    <details class="card pack-section" id="packing-settings" tabindex="-1"><summary>Trip settings, refills and estimates</summary><h2>Trip and refill plan</h2>
       <p class="planning-note">Estimated moving time ${duration(time.movingLow)}–${duration(time.movingHigh)}.
         ${time.breaks ? `Add ${duration(time.breaks)} in breaks.` : ''}
         ${time.stopMinutes ? `Add ${duration(time.stopMinutes)} for overnight stops.` : ''}</p>

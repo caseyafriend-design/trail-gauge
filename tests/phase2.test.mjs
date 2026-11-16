@@ -134,7 +134,7 @@ test('packing starts with saved checklist and keeps estimates in closed settings
   const suggestions = packingSuggestions(trail, [hiker], time, null, defaultTrip, '09:00');
   const html = packingPage(trail, [hiker], defaultTrip, { entries: [{ id: 'item', name: 'My item', category: 'gear', packed: true }] }, suggestions, time, '09:00', 'https://www.nps.gov/');
   assert.ok(html.indexOf('id="packing-checklist"') < html.indexOf('id="packing-settings"'));
-  assert.match(html, /<details class="card pack-section" id="packing-settings">/);
+  assert.match(html, /<details class="card pack-section" id="packing-settings" tabindex="-1">/);
   assert.match(html, /value="item"[^>]* checked/);
   assert.match(html, /Forecast unavailable; packing estimates exclude weather/);
   assert.match(html, /id="packing-forecast-panels"/);
