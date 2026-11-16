@@ -105,28 +105,10 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
   const entries = plan.entries ?? [];
   return `<a class="back" href="#trail/${encodeURIComponent(trail.id)}">← ${escapeHtml(trail.name)}</a>
     <div class="intro"><h1>Pack for your hike</h1><p>${escapeHtml(trail.name)} · ${group.length} ${group.length === 1 ? 'hiker' : 'hikers'}</p>
-      <p class="planning-note"><a href="#trail/${encodeURIComponent(trail.id)}/forecast">Set or review the hike forecast</a></p></div>
+      <p class="planning-note">Forecast unavailable; packing estimates exclude weather. <a href="#trail/${encodeURIComponent(trail.id)}/forecast">Review weather limitations</a></p></div>
+    <p class="planning-note"><a href="#packing-checklist" data-pack-jump="packing-checklist">Checklist</a> · <a href="#packing-settings" data-pack-jump="packing-settings">Edit trip, water and food assumptions</a></p>
     ${!group.length ? `<p class="card">Choose who’s hiking to create a packing plan. <a class="button secondary" href="#group/${encodeURIComponent(trail.id)}/packing">Choose hikers</a></p>` : `
-    <section class="card pack-section"><h2>Trip and refill plan</h2>
-      <p class="planning-note">Estimated moving time ${duration(time.movingLow)}–${duration(time.movingHigh)}.
-        ${time.breaks ? `Add ${duration(time.breaks)} in breaks.` : ''}
-        ${time.stopMinutes ? `Add ${duration(time.stopMinutes)} for overnight stops.` : ''}</p>
-      <form id="trip-form">
-        ${tripInputs(trip)}
-        <details class="form-details"><summary>Refills and reserve water</summary>
-          <div class="form-grid">
-            ${selectInput('refill', 'Usable refills', trip.refill, { none: 'None planned', unverified: 'Possible, unverified', confirmed: 'Confirmed for this trip' })}
-            ${numberInput('firstRefill', 'Time to first usable refill (min)', trip.firstRefill, 1, 1440)}
-            ${numberInput('longestGap', 'Longest leg between usable water, including start and finish (min)', trip.longestGap, 1, 1440)}
-            ${numberInput('reserve', 'Reserve per person (L)', trip.reserve, 0, 20, .1)}
-          </div>
-          ${textInput('refillNotes', 'Refill locations and treatment plan', trip.refillNotes, 'text', 'maxlength="250"')}
-        </details>
-        <button class="compare-toggle" type="submit">Save trip settings</button>
-      </form>
-    </section>
-    <div id="packing-forecast-panels">${packingForecastPanels(suggestions, plan, trip, start, parkConditions)}</div>
-    <section class="card pack-section"><h2>Group checklist</h2>
+    <section class="card pack-section" id="packing-checklist" tabindex="-1"><h2>Group checklist</h2>
       <div id="pack-progress" class="pack-progress" role="status">${progressMarkup(entries)}</div>
       <p class="planning-note">Add suggested items to the checklist, then edit quantities and check items off.</p>
       <form id="packing-items">
@@ -155,6 +137,25 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
         <button class="compare-toggle" type="submit">Add item</button>
       </form>
     </section>
+    <details class="card pack-section" id="packing-settings"><summary>Trip settings, refills and estimates</summary><h2>Trip and refill plan</h2>
+      <p class="planning-note">Estimated moving time ${duration(time.movingLow)}–${duration(time.movingHigh)}.
+        ${time.breaks ? `Add ${duration(time.breaks)} in breaks.` : ''}
+        ${time.stopMinutes ? `Add ${duration(time.stopMinutes)} for overnight stops.` : ''}</p>
+      <form id="trip-form">
+        ${tripInputs(trip)}
+        <details class="form-details"><summary>Refills and reserve water</summary>
+          <div class="form-grid">
+            ${selectInput('refill', 'Usable refills', trip.refill, { none: 'None planned', unverified: 'Possible, unverified', confirmed: 'Confirmed for this trip' })}
+            ${numberInput('firstRefill', 'Time to first usable refill (min)', trip.firstRefill, 1, 1440)}
+            ${numberInput('longestGap', 'Longest leg between usable water, including start and finish (min)', trip.longestGap, 1, 1440)}
+            ${numberInput('reserve', 'Reserve per person (L)', trip.reserve, 0, 20, .1)}
+          </div>
+          ${textInput('refillNotes', 'Refill locations and treatment plan', trip.refillNotes, 'text', 'maxlength="250"')}
+        </details>
+        <button class="compare-toggle" type="submit">Save trip settings</button>
+      </form>
+    </section>
+    <div id="packing-forecast-panels">${packingForecastPanels(suggestions, plan, trip, start, parkConditions)}</div></details>
     <section class="card pack-section"><h2>Optional reminders</h2>
       <p class="planning-note">A reminder appears in this tab while it is open.</p>
       <form id="reminder-form" class="form-grid">

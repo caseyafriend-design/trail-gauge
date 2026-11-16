@@ -237,7 +237,7 @@ function comparePage() {
       <form id="fit-form" class="fields">
         <label class="full-width">Time budget (minutes)<input name="budget" type="number" min="5" max="10080" required value="${escapeHtml(budget)}"></label>
         ${planFields()}
-        <p class="planning-note full-width">Start time is local to each trail. Set a date and time to include the forecast.</p>
+        <p class="planning-note full-width">Start time is local to each trail. Forecast unavailable; estimates exclude weather.</p>
         <button class="button" type="submit">Update recommendation</button>
         <p class="planning-note full-width" data-plan-status role="status"></p>
       </form>
@@ -302,9 +302,14 @@ function difficultyPanel(trail) {
       <div><dt>Estimated time</dt><dd>${timeFor(trail)}</dd></div>
       <div><dt>Group difficulty</dt><dd class="${result?.rating.toLowerCase() ?? ''}">${result?.rating ?? 'Choose hikers'}</dd></div>
     </dl>
+    <div class="fit-scope"><p class="planning-note">Planning estimate only: terrain, group and time budget. Weather unavailable; conditions may change the fit.</p>
+      <p class="planning-note">${escapeHtml(trail.access ?? 'Access details unverified.')} ${escapeHtml(trail.crossings ?? 'Crossings unverified.')}</p>
+      <p class="planning-note">Easy, short or paved does not mean accessible for everyone. <a href="${trail.statsSource}" target="_blank" rel="noopener">Official route/access details ↗</a> ·
+        <a href="${parks[trail.parkCode].conditions}" target="_blank" rel="noopener">Check current park conditions ↗</a></p>
+      <p class="planning-note">Park-wide alerts do not certify this route is safe or open.</p></div>
     ${result ? `<p class="fit-message ${fit.issues.length ? 'plan-alert' : ''}">${fit.issues.length
       ? `<strong>${result.limits.length ? 'Firm limit' : 'Check the fit'}</strong> · ${escapeHtml(fit.issues.join(' · '))}`
-      : 'Fits your current group and time budget.'}</p>
+      : 'Within your terrain, group and time settings — not a safety assessment.'}</p>
       <details class="form-details"><summary>What affects group difficulty?</summary>
         ${gauge(result.score)}
         <p class="reason">${weather ? 'Includes the forecast.' : 'Terrain and group only.'}
@@ -313,51 +318,18 @@ function difficultyPanel(trail) {
       : '<p class="planning-note">Choose who’s hiking to see the group recommendation.</p>'}`;
 }
 
-const forecastMessages = {
-  unplanned: 'Weather unavailable. Choose a date and start time.',
-  pending: 'Fetching hourly forecast…',
-  outside: 'Weather unavailable for the full hike window. It is outside the forecast coverage.',
-  failed: 'Weather unavailable. Open-Meteo could not be reached or returned incomplete data.',
-  coverage: 'Weather unavailable. The provider has incomplete coverage for this route or time.',
-  invalid: 'Weather unavailable. Choose a valid local time outside the daylight saving clock change.',
-  stale: 'Weather unavailable for estimates. The cached forecast is stale.'
-};
-
-const rangeText = (min, max, unit) => min === max ? `${Math.round(min)}${unit}`
-  : `${Math.round(min)}–${Math.round(max)}${unit}`;
-
 function forecastPanel(trail) {
-  const view = conditionsFor(trail);
-  const local = timestamp => formatLocal(timestamp, trail.parkCode);
-  const weatherImpact = weatherStress(view.weather);
-  const contributing = ['feels-like temperature', 'precipitation', 'wind gusts'].filter((_, index) => weatherImpact[index] > 0);
-  const baseline = timeRange(trail, currentGroup(), null, contextFor(trail)).high;
-  const added = view.weather ? timeRange(trail, currentGroup(), view.weather, contextFor(trail)).high - baseline : 0;
-  return `<p role="status">${forecastMessages[view.status] ?? `Planned window · ${local(view.start)} to ${local(view.end)}`}</p>
-    ${view.status === 'stale' ? `<p>Cached window · ${local(view.start)} to ${local(view.end)}</p>` : ''}
-    <p>Source <a href="${forecastSource}" target="_blank" rel="noopener">Open-Meteo ↗</a>
-      ${view.fetchedAt ? ` · Last fetched ${local(view.fetchedAt)}${view.stale || view.status === 'stale' ? ' · Stale cache' : ''}` : ''}</p>
-    ${view.samples?.map(sample => `<details class="forecast-sample">
-      <summary><strong>${sample.name}${sample.elevationFt ? ' · ' + sample.elevationFt.toLocaleString('en-US') + ' ft' : ''}</strong>
-      <span>${rangeText(sample.tempMin, sample.tempMax, '°F')} · Feels ${rangeText(sample.apparentMin, sample.apparentMax, '°F')}</span>
-      <span>Precipitation up to ${sample.probabilityMax}% · ${sample.types.join(', ')} · Gusts up to ${Math.round(sample.gustMax)} mph</span></summary>
-      <div class="forecast-scroll" tabindex="0" role="region" aria-label="${sample.name} hourly forecast"><table>
-        <thead><tr><th scope="col">Local hour</th><th scope="col">Temp</th><th scope="col">Feels</th><th scope="col">Precip.</th><th scope="col">Gusts</th></tr></thead>
-        <tbody>${sample.hours.map(row => `<tr><th scope="row">${local(row.time)}</th><td>${Math.round(row.temperature)}°F</td><td>${Math.round(row.apparent)}°F</td>
-          <td>${row.probability === null ? '—' : row.probability + '%'} · ${row.type}</td><td>${Math.round(row.gust)} mph</td></tr>`).join('')}</tbody></table></div>
-      </details>`).join('') ?? ''}
-    <p>${view.weather ? (contributing.length
-      ? `The estimate allows for ${contributing.join(', ')}. The upper time estimate adds ${added} min after rounding.`
-      : 'The sampled weather adds no extra time or difficulty.')
-      : 'Any estimate uses terrain and group only.'}</p>
-    <p>For closures, crossing conditions, and ice on the trail, check the official park conditions below.</p>`;
+  return `<p role="status">Forecast unavailable. No commercially permitted weather provider is configured.</p>
+    <p>Time and difficulty use terrain and group only, not current weather. Unknown weather does not mean zero weather risk.</p>
+    <p class="planning-note"><a href="${parks[trail.parkCode].conditions}" target="_blank" rel="noopener">Check official park conditions and weather ↗</a> ·
+      <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">Provider terms ↗</a></p>`;
 }
 
 function alertsPanel(parkCode) {
   const park = parks[parkCode];
   const entry = parkAlerts.get(parkCode);
   const fresh = entry?.snapshot && Date.now() - entry.snapshot.fetchedAt < alertsMaxAge && entry.status !== 'failed';
-  return `<h2>Official park conditions</h2>
+  return `<h2>Official park conditions</h2><p class="planning-note">Park-wide alerts do not certify this route is safe or open. A missing or empty feed is not route clearance.</p>
     <p class="planning-note"><a href="${park.conditions}" target="_blank" rel="noopener">Current conditions and all alerts from NPS ↗</a></p>
     <p class="planning-note">${fresh ? `Park-wide alerts · Checked ${formatLocal(entry.snapshot.fetchedAt, parkCode)}`
       : entry?.status === 'pending' || !entry ? 'Checking park-wide alerts…' : 'Live park alerts are unavailable. Check the park conditions page.'}</p>
@@ -385,11 +357,6 @@ function trailPage(trail) {
       <a class="button secondary" href="#group/${trail.id}">Edit group · ${size} ${size === 1 ? 'hiker' : 'hikers'}</a></div>
     <details class="form-details"><summary>Moving time, breaks and altitude</summary><div id="trail-planning">${planningFacts(trail)}</div></details>
     <details class="form-details" id="forecast" tabindex="-1"><summary>Hike forecast</summary>
-      <p class="planning-note">Set your start in ${parks[trail.parkCode].timeLabel}.</p>
-      <form id="weather-form" class="fields">
-        ${planFields(true)}
-        <button class="button full-width" type="submit">Get forecast</button>
-      </form>
       <div id="forecast-status">${forecastPanel(trail)}</div>
     </details>
     <div class="trail-actions">
