@@ -4,6 +4,7 @@ import { forecastView } from './forecast-view.js';
 import { explorePage, mountExplore, preferenceButtons, preferenceKey } from './explore.js';
 import { routeSummary } from './route-summary.js';
 import { defaultTrip, packingCategories, packingSuggestions, tripKey } from './packing.js';
+import { decideSuggestion } from './packing-decisions.js';
 import { packingPage, packingForecastPanels, readTrip, updatePackingProgress } from './packing-page.js';
 import { readPlanningProfile } from './profile-planning.js';
 import { altitudeNotes, terrainPaceCost } from './personalization.js';
@@ -769,7 +770,7 @@ screen.addEventListener('submit', event => {
     }
     render();
     screen.querySelector('#review-status').textContent = 'Review saved in this browser.';
-  } else if (trail && verifiedTrail(trail.id) && ['trip-form', 'water-edit-form', 'packing-items', 'add-packing-item', 'reminder-form'].includes(form.id)) {
+  } else if (trail && verifiedTrail(trail.id) && ['trip-form', 'water-edit-form', 'packing-items', 'packing-suggestions-form', 'add-packing-item', 'reminder-form'].includes(form.id)) {
     savePackingForm(trail, form, data);
   }
 });
@@ -797,15 +798,10 @@ function savePackingForm(trail, form, data) {
     const items = (plan.entries ?? []).filter(item => item.id !== remove).map(item => ({ ...item,
       name: readText(data, 'name-' + item.id) || item.name,
       amount: readText(data, 'amount-' + item.id), packed: packed.has(item.id) }));
-    if (data.get('action') === 'suggest') {
-      const names = new Set(items.map(item => item.category + ':' + item.name.toLowerCase()));
-      for (const item of suggestions.entries) {
-        if (!names.has(item.category + ':' + item.name.toLowerCase())) {
-          items.push({ ...item, id: crypto.randomUUID(), packed: false });
-        }
-      }
-    }
     plan.entries = items;
+  } else if (form.id === 'packing-suggestions-form') {
+    const decision = data.has('add') ? 'add' : 'dismiss';
+    Object.assign(plan, decideSuggestion(plan, suggestions.entries, readText(data, decision), decision, () => crypto.randomUUID()));
   } else if (form.id === 'add-packing-item') {
     const category = readText(data, 'category');
     const name = readText(data, 'name');
@@ -830,7 +826,7 @@ function savePackingForm(trail, form, data) {
   }
   plan.trailId = trail.id;
   state.packing[key] = plan;
-  if (form.id === 'trip-form' || form.id === 'water-edit-form' || data.get('action') === 'suggest') {
+  if (form.id === 'trip-form' || form.id === 'water-edit-form' || (form.id === 'packing-suggestions-form' && data.has('add'))) {
     const refreshed = packingFor(trail).suggestions;
     plan.estimateDate = dateAt(trail);
     plan.estimates = refreshed.water.map((water, index) => ({
@@ -842,8 +838,14 @@ function savePackingForm(trail, form, data) {
   const old = document.getElementById(form.id);
   const open = [...old.querySelectorAll('details')].map(details => details.open);
   const scroll = window.scrollY;
+  const remindersOpen = document.querySelector('#packing-reminders')?.open;
   render();
+  if (remindersOpen) document.querySelector('#packing-reminders').open = true;
   document.getElementById(form.id)?.querySelectorAll('details').forEach((details, index) => { details.open = open[index]; });
+  if (form.id === 'packing-suggestions-form') {
+    const target = document.querySelector('#packing-suggestions-form button') ?? document.querySelector('#packing-checklist');
+    target.focus({ preventScroll: true });
+  }
   window.scrollTo(0, scroll);
 }
 

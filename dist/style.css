@@ -265,6 +265,9 @@ textarea{font:inherit;width:100%;border:1px solid #4a554b;border-radius:8px;back
 .pack-food-summary li{padding:5px 0}
 .packing-item{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,.8fr) auto;gap:7px;align-items:end;padding:9px 0;border-top:1px solid var(--line)}
 .packing-item:first-of-type{border-top:0}
+.packing-suggestion{padding:12px 0;border-top:1px solid var(--line)}
+.packing-suggestion h3{margin:0;font-size:1rem}
+.packing-suggestion p{margin:6px 0}
 .packing-item small{grid-column:2/-1;color:var(--muted)}
 .packing-item input[type=checkbox]{width:18px;height:18px;min-height:0;accent-color:var(--mint)}
 .packing-item label.check-line{min-height:42px}

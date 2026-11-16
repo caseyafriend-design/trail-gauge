@@ -1,6 +1,7 @@
 import { checkInput, escapeHtml, numberInput, readNumber, readText, selectInput, textInput } from './forms.js';
 import { duration } from './planning.js';
 import { defaultTrip, liters, litersRange, packingCategories } from './packing.js';
+import { pendingSuggestions, suggestionKey } from './packing-decisions.js';
 
 export function tripInputs(trip) {
   return `<div class="form-grid">
@@ -103,14 +104,25 @@ export function packingForecastPanels(suggestions, plan, trip, start, parkCondit
 
 export function packingPage(trail, group, trip, plan, suggestions, time, start, parkConditions) {
   const entries = plan.entries ?? [];
+  const pending = pendingSuggestions(plan, suggestions.entries);
   return `<a class="back" href="#trail/${encodeURIComponent(trail.id)}">← ${escapeHtml(trail.name)}</a>
     <div class="intro"><h1>Pack for your hike</h1><p>${escapeHtml(trail.name)} · ${group.length} ${group.length === 1 ? 'hiker' : 'hikers'}</p>
       <p class="planning-note">Forecast unavailable; packing estimates exclude weather. <a href="#trail/${encodeURIComponent(trail.id)}/forecast">Review weather limitations</a></p></div>
     <p class="planning-note"><a href="#packing-checklist" data-pack-jump="packing-checklist">Checklist</a> · <a href="#packing-settings" data-pack-jump="packing-settings">Edit trip, water and food assumptions</a></p>
     ${!group.length ? `<p class="card">Choose who’s hiking to create a packing plan. <a class="button secondary" href="#group/${encodeURIComponent(trail.id)}/packing">Choose hikers</a></p>` : `
+    <section class="card pack-section" id="packing-suggestions"><h2>Suggested starting items</h2>
+      <p class="planning-note">Review each suggestion. Add puts it on your checklist, not in your pack; Dismiss leaves it out. Your saved items stay unchanged.</p>
+      <form id="packing-suggestions-form">
+        ${pending.map(item => `<div class="packing-suggestion"><h3>${escapeHtml(item.name)}</h3>
+          ${item.amount ? `<p>${escapeHtml(item.amount)}</p>` : ''}<p class="planning-note">${escapeHtml(item.reason)}</p>
+          <div class="pack-actions"><button class="compare-toggle" type="submit" name="add" value="${escapeHtml(suggestionKey(item))}" aria-label="Add ${escapeHtml(item.name)}">Add</button>
+            <button class="compare-toggle" type="submit" name="dismiss" value="${escapeHtml(suggestionKey(item))}" aria-label="Dismiss ${escapeHtml(item.name)}">Dismiss</button></div></div>`).join('')}
+        ${!pending.length ? '<p>No new suggestions to review. You can still add your own items below.</p>' : ''}
+      </form>
+    </section>
     <section class="card pack-section" id="packing-checklist" tabindex="-1"><h2>Group checklist</h2>
       <div id="pack-progress" class="pack-progress" role="status">${progressMarkup(entries)}</div>
-      <p class="planning-note">Add suggested items to the checklist, then edit quantities and check items off.</p>
+      <p class="planning-note">Edit quantities and check items off only when packed.</p>
       <form id="packing-items">
         ${Object.entries(packingCategories).map(([category, title]) => {
           const items = entries.filter(entry => entry.category === category);
@@ -127,7 +139,6 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
         }).join('')}
         <div class="pack-actions">
           ${entries.length ? '<button type="submit" class="compare-toggle">Save checklist edits</button>' : ''}
-          <button type="submit" class="compare-toggle" name="action" value="suggest">Add suggestions</button>
         </div>
       </form>
       <form id="add-packing-item" class="form-grid">
@@ -155,12 +166,12 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
         <button class="compare-toggle" type="submit">Save trip settings</button>
       </form>
     <div id="packing-forecast-panels">${packingForecastPanels(suggestions, plan, trip, start, parkConditions)}</div></details>
-    <section class="card pack-section"><h2>Optional reminders</h2>
-      <p class="planning-note">A reminder appears in this tab while it is open.</p>
+    <details class="card pack-section" id="packing-reminders"><summary>Optional reminders${plan.reminder ? ' · active' : ''}</summary>
+      <p class="planning-note">Set a repeating prompt to pause and check your food or water plan. It appears only in this tab while it is open, not as a phone notification.</p>
       <form id="reminder-form" class="form-grid">
         ${numberInput('interval', 'Remind this group every (min)', plan.reminder?.interval, 1, 240)}
         <div class="pack-actions"><button class="compare-toggle" type="submit">Start reminder</button>
           ${plan.reminder ? '<button class="compare-toggle" type="submit" name="action" value="stop">Stop reminder</button>' : ''}</div>
       </form>
-    </section>`}`;
+    </details>`}`;
 }
