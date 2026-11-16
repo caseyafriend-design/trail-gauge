@@ -1,113 +1,93 @@
 # Trail Gauge
 
-One reviewed hike per park in six already covered U.S. national parks. Core route pages, group estimates and packing remain useful without optional providers. No installation, keys or paid services.
+Trail Gauge helps hikers discover mapped trails across the United States and compare the fit of verified hikes for their group. The static site uses Leaflet maps and stores profiles, groups, and reviews in the browser.
 
-## Local preview
+## Run the local preview
 
-Serve `dist/` with an existing static server bound only to 127.0.0.1 on an unused port. Use a disposable browser origin for tests; existing personal data belongs to its original host/port. No build is required. No deployment was performed.
+```sh
+python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
+```
 
-Explore and Map contain only the six itineraries below. Location filters this catalog locally within about 40 miles, without sending coordinates to providers. Set up a profile, compare hikes, then open a hike and Plan & pack. Estimates are rough ranges, not safety/access guarantees.
+Open [Trail Gauge](http://127.0.0.1:8765/). No build, package installation, or API keys are required. The preview needs internet access for Leaflet, OpenStreetMap, forecasts, and park alerts. Existing browser data belongs to its original origin, so use the same host and port when checking a previous local installation. The production hosting manifest still points to `dist/`.
 
-## Reviewed coverage
+1. Start in **Explore**. Search verified hikes by trail or park and filter by park, distance, or group fit. Save favorites, mark trails **Would skip**, and restore them from that list.
+2. Set up a profile with a nickname, fitness, and experience. Choose hikers in **My Group**. Add account-free guests under **Profiles & local guests**.
+3. Add verified hikes to **Compare**. Set a time budget and optionally a hike date and start in each trail’s local time.
+4. Open a verified hike for its map, forecast, and park conditions. Use **Plan & pack** to save trip settings, review food and water estimates, and edit a group checklist. Log the completed hike to see the review in **Hike history**.
 
-Official sources reviewed November 16, 2026 UTC. Current NPS geometry queries matched the stored November 11 snapshot for all six published routes. This is source review, not field inspection.
+## Phase 2 planning
 
-### Riverside Walk — Zion National Park
+- **Discovery.** Explore’s park, distance, and fit filters use the seven verified itineraries. The nationwide search and map include mapped USGS segments. **Use my location** asks the browser for permission and looks for nearby verified hikes and USGS segments within about 40 miles. Coordinates are rounded to two decimals for the USGS search and are kept only while the Explore page is open. If permission is denied, use the park filter or the nationwide state selector.
+- **Private hiker details.** Comfort ranges, firm limits, terrain preferences, recent hikes, food restrictions, and water details are optional. The app stores these under each hiker’s planning profile in browser storage. Older basic profiles and guests continue to work. The app has no community endpoint, and forecast or trail requests contain no profile, diet, water, or hike-review data.
+- **Group time and fit.** The moving baseline uses the slower estimated pace, one minute per 100 ft of ascent, and adjustments for known surface and grade, pack load, and weather. It uses uphill and downhill grade when separately reported. The current catalog generally provides a combined grade or no grade. Breaks and overnight stops are added to elapsed time separately. When a profile or log has recent comparable moving time, the app matches up to three outings by distance, climb per mile, pack load when known, and date. It uses the slower plausible result and names the outings. Usual pace and a rough baseline are fallbacks. History can exclude any eligible outing from future estimates. There is no held-out validation set for this preview. Estimates are shown as planning ranges and flagged when the data is sparse. Firm limits can rule out a route. Unverified terrain features can require a check before recommending a hike. Altitude is shown separately. [Travel-time research](https://doi.org/10.1016/j.compenvurbsys.2022.101866) · [NPS group guidance](https://www.nps.gov/articles/hiking-safety.htm) · [CDC altitude guidance](https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html)
+- **Packing.** Checklists and trip settings are saved per verified route and group. Suggestions account for moving time, breaks, forecast when available, and optional overnight stops. Snack estimates use logged or typical portions when available. Meal windows, camp meals, and reserve food are separate. Specific foods are excluded if the hiker has an exclusion and has not checked the product’s ingredients. Label data can give snack servings and approximate carbohydrates. The sports fueling reference is optional and does not set portions. Water estimates are editable per person and summed for the group. They distinguish estimated use, starting carry, reserve, and confirmed refill legs. Generic water ranges are packing heuristics. Comparable water logs can refine a range, which widens when conditions or effort differ. A recorded sweat rate is shown as context. The app flags unverified refills and carry capacity shortfalls. Reminders appear only while the app tab is open. [NPS trip planning](https://www.nps.gov/articles/upload/NPS-Trip-Planning-Guide-Package-1.pdf) · [Sports nutrition position statement](https://www.andeal.org/files/files/Collaborations/Position_Athletic-Performance_2016March.pdf) · [Fluid replacement position statement](https://pmc.ncbi.nlm.nih.gov/articles/PMC5634236/)
+- **Completed hikes.** A review can record separate moving and elapsed times, weather, effort, notes, crossings, reception with a date and carrier, and actual food and water use. If the group saved a packing estimate on or before the recorded date, history compares the hiker’s reported use with the saved estimate and shows reported shortfalls. These comparisons describe packing experience. Reviews and reception observations stay in this browser.
 
-Follow the Virgin River beneath Zion Canyon’s sandstone walls on a concrete path with sandy sections. This riverside hike ends at the Narrows approach; it does not include river hiking.
+## Nationwide trail discovery
 
-Begin past the restrooms at Temple of Sinawava. Turn around where the paved path ends, before entering The Narrows. Turn around at the end of the paved path; return on the same path to Temple of Sinawava.
+The **Browse U.S. trails** screen queries the [USGS National Digital Trails layer](https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/37/query). It supports nationwide name search and browsing within any of the 50 states, Washington, D.C., or Puerto Rico. The layer aggregates public-domain federal, state, and some local data. Coverage varies by area and land manager. Some trails are absent. [USGS coverage and update cadence](https://www.usgs.gov/national-digital-trails/qas-about-usgs-trail-data)
 
-2.0 mi is the complete return hike, using the NPS accessibility survey’s 1 mi outbound measurement. Round-trip ascent derived from the NPS accessibility survey’s 154.2 ft outbound gain and 48.5 ft outbound loss. The park overview also lists 2.2 mi and 57 ft elevation change. Elevation change is not cumulative ascent; this itinerary uses the survey convention and 203 ft derived return ascent.
+- Results include land trails where hiking is listed or unspecified. The app labels unspecified hiking use and offers unnamed segments when browsing by state. A name can apply to several separately mapped segments. Trail lengths shown in these results are segment lengths. Access and current conditions should be checked with the source land manager.
+- The browser sends search terms or the selected area boundary to USGS and loads 24 records at a time. Selecting a result fetches its geometry. Direct links use the USGS permanent identifier where available. If USGS supplies only an object ID, the fallback link may change when the source refreshes. Personal planning data stays in the browser.
+- Full-hike estimates, group comparison, and trail-local forecasts are available for the verified itineraries below. The nationwide source does not consistently supply verified trailheads, full-route geometry, or elevation gain. Segment pages show those planning fields as unavailable.
+- State filtering uses spatial intersection with the Census Bureau’s generalized 2025 boundaries. Trails near borders can appear in adjacent states. To regenerate the boundaries, run `python3 scripts/import-us-states.py`. [Census boundary source](https://www.census.gov/geographies/mapping-files/2025/geo/carto-boundary-file.html)
 
-[Official itinerary/statistics](https://www.nps.gov/thingstodo/hike-riverside-walk.htm) · [Ascent source](https://www.nps.gov/thingstodo/hike-riverside-walk.htm) · [Timezone source](https://www.nps.gov/zion/contacts.htm)
+## Nationwide map
 
-Current NPS source segments, junction order, return path, endpoint access and distance were checked against the stored trace. This is a source review, not a field inspection.
+**Map** opens the nationwide overview. Jump to a state, select a verified hike pin, or pan and zoom. At local zoom levels, the app draws the entire USGS Trails layer for the visible area, including land, snow, water, and unnamed trail segments. The map has no search-result limit. Trail detail starts at zoom level 11 to follow the source’s published display scale. [USGS trail layer](https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/37)
 
-### Bear Lake Loop — Rocky Mountain National Park
+Select a trail line to see nearby USGS segment records and open a detail page. The return link restores the map location and zoom. The browser requests a transparent USGS map image after the view settles, and clicking sends a point on the map to USGS to look up its segments. Blue pins open verified planning routes. The verified regional maps remain available in the **Map view** selector.
 
-Circle an alpine lake framed by spruce and fir, with views toward the surrounding peaks. Gravel, log steps and wooden bridges make this a walking loop rather than a uniformly smooth path.
+## Route coverage and sourcing
 
-Start at the east lakeshore junction, a short walk from Bear Lake Trailhead. The short parking-area approach is outside the loop distance. Check Bear Lake Road access and timed entry with the park. Complete the lakeshore loop back to the east lakeshore junction. No separate summit or turnaround is included.
+The GeoJSON snapshot was imported November 11, 2026. Each route has a stable existing app ID, park code and name, mapped trailhead, full itinerary geometry, source feature IDs and links, and a source for its displayed stats. Both maps draw the same itinerary. The GIS path length is a sanity check against the published planning distance.
 
-0.6 mi is the lakeshore loop only; the short parking-area approach is excluded. Elevation gain is published by NPS for the loop. The corridor guide lists 0.6 mi and 71 ft gain. The hiking index lists 0.7 mi for a lollipop-style route; an older accessibility guide lists 0.5 mi and 20 ft. Those start/measurement conventions are not used here.
+- **Riverside Walk, Zion** · 2.0 mi out and back from Temple of Sinawava, ending before the Narrows river entry. The February 2025 NPS access survey reports 1 mi one way. Its outbound gain and loss add up to 202.7 ft of round-trip ascent, displayed as 203 ft. The GIS trace measures 1.93 mi round trip. The separate park overview uses 2.2 mi and 57 ft of elevation *change*, a different reporting convention. [NPS trail survey](https://www.nps.gov/thingstodo/hike-riverside-walk.htm) · [NPS park guide](https://home.nps.gov/zion/planyourvisit/upload/25-26Winter-InfoGuide.pdf)
+- **Bear Lake Loop, Rocky Mountain** · 0.6 mi loop and 71 ft gain from the east lakeshore junction. This itinerary excludes the short parking-area approach. The loop measures 0.60 mi in GIS. [NPS corridor guide](https://www.nps.gov/romo/planyourvisit/exploring-the-bear-lake-road-corridor.htm) · [NPS accessibility guide](https://www.nps.gov/romo/planyourvisit/upload/ROMO-Access-Guide_Updated-6-2026-2.pdf)
+- **Flattop Mountain, Rocky Mountain** · 8.8 mi out and back from Bear Lake Trailhead, using the NPS 4.4 mi one-way convention. NPS reports 2,849 ft of gain to the destination. Additional return ascent is unverified. The GIS itinerary measures 8.91 mi round trip and turns at the Tonahutu/North Inlet junction. The two forecast samples are at the 9,475 ft NPS trailhead and an upper-route GIS vertex at about 12,316 ft per USGS 3DEP. [NPS trail list](https://www.nps.gov/romo/planyourvisit/list_hiking_trails.htm) · [USGS elevation sample](https://epqs.nationalmap.gov/v1/json?x=-105.69022436&y=40.30894616&units=Feet&wkid=4326&includeDate=true)
+- **Hall of Mosses, Olympic** · 0.8 mi loop and 100 ft gain from the mapped Hall of Mosses entrance near the Hoh Rain Forest Visitor Center. The GIS itinerary includes the short approach to the loop and its return, totaling 0.86 mi. The NPS accessibility survey also publishes a longer measurement with a different start. [NPS Hoh brochure](https://www.nps.gov/olym/planyourvisit/hoh-rain-forest-area-brochure.htm) · [NPS trailhead guide](https://www.nps.gov/places/000/hall-of-mosses-trailhead.htm)
 
-[Official itinerary/statistics](https://www.nps.gov/romo/planyourvisit/exploring-the-bear-lake-road-corridor.htm) · [Ascent source](https://www.nps.gov/romo/planyourvisit/exploring-the-bear-lake-road-corridor.htm) · [Timezone source](https://www.nps.gov/romo/contacts.htm)
+- **Lower Yosemite Fall Trail, Yosemite, California** · 1 mi paved loop, about 50 ft gain. The GIS loop measures 0.97 mi and starts at the east junction near the shuttle stop. [NPS trail guide](https://www.nps.gov/yose/planyourvisit/lowerfalltrail.htm)
+- **Limberlost Trail, Shenandoah, Virginia** · 1.3 mi loop, 130 ft gain, starting at the Limberlost parking area. The GIS line measures 1.34 mi and begins and ends at adjacent parking-area access points. [NPS trail guide](https://www.nps.gov/thingstodo/limberlost.htm)
+- **Desert Discovery Trail, Saguaro, Arizona** · 0.4 mi paved loop, with 25.8 ft surveyed gain displayed as 26 ft. The GIS line measures 0.38 mi and begins and ends at adjacent parking-area access points. [NPS accessibility survey](https://www.nps.gov/sagu/planyourvisit/tmd-trail-accessibility.htm)
 
-Current NPS source segments, junction order, return path, endpoint access and distance were checked against the stored trace. This is a source review, not a field inspection.
+Other previous routes are unavailable pending a verified end-to-end trace and matching stats. Old bookmarks and reviews still resolve to their trail names, including Queens Garden in Bryce Canyon. Unverified route attributes are shown as unavailable.
 
-### Hall of Mosses — Olympic National Park
+Four route photos are included as credited NPS public-domain works. The source pages identify the photographer or NPS credit. Other itineraries display a photo-unavailable state until rights and trail identity can be verified. [NPS reuse policy](https://www.nps.gov/aboutus/disclaimer.htm) · [Riverside Walk, NPS / Abi Farish](https://www.nps.gov/thingstodo/hike-riverside-walk.htm) · [Bear Lake, NPS / Paul Allison](https://www.nps.gov/romo/planyourvisit/trail_conditions.htm) · [Flattop Mountain, NPS / Bonnie Beach](https://www.nps.gov/romo/planyourvisit/brochures.htm) · [Hall of Mosses, NPS / L. Napolitano](https://www.nps.gov/places/000/hall-of-mosses-trailhead.htm)
 
-Walk beneath moss-draped bigleaf maples and conifers in the Hoh Rain Forest. The compacted-gravel route has roots, rocks and steps, crosses Taft Creek, and includes a short approach before the loop.
+### Refreshing the route snapshot
 
-Start near the Hoh Rain Forest Visitor Center. The trail crosses Taft Creek. Check Hoh Road and facility access with the park. Follow the full Hall of Mosses loop, then retrace the entrance approach to the mapped start near the visitor center.
+```sh
+python3 scripts/import-routes.py
+```
 
-0.8 mi is the NPS Hoh brochure loop convention; the mapped entrance approach and return bring the GIS trace to 0.86 mi. Elevation gain is published by NPS for the loop. The Hoh brochure lists 100 ft gain. The accessibility survey measures a longer route from a different start; its distance is not substituted for this brochure itinerary.
+The importer queries the public NPS GIS layer for the reviewed features in `scripts/routes.json`, checks each park, feature name, segment connection, and itinerary length, and writes `dist/routes.geojson` after all checks pass. Use `--import-date YYYY-MM-DD` to record an explicit import date. Recheck trailheads, segment IDs, mileage conventions, and source notes against official guides before updating the manifest. ArcGIS object IDs are source references and can change. The app IDs do not depend on them. Refresh the catalog manually when NPS updates the routes or source guides. [NPS public trails GIS](https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails_Geographic/FeatureServer/0) · [NPS reuse notice](https://www.nps.gov/aboutus/publications.htm)
 
-[Official itinerary/statistics](https://www.nps.gov/olym/planyourvisit/hoh-rain-forest-area-brochure.htm) · [Ascent source](https://www.nps.gov/olym/planyourvisit/hoh-rain-forest-area-brochure.htm) · [Timezone source](https://www.nps.gov/olym/planyourvisit/wilderness-reservations.htm)
+The map requests visible OpenStreetMap tiles on demand over HTTPS with browser caching and an origin referrer. Map attribution and an issue-report link are visible. [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/)
 
-Current NPS source segments, junction order, return path, endpoint access and distance were checked against the stored trace. This is a source review, not a field inspection.
+## Forecast and park alerts
 
-### Lower Yosemite Fall Trail — Yosemite National Park
+- **Open-Meteo** provides hourly temperature, apparent temperature, precipitation probability, weather-code-derived precipitation type, and wind gusts. The request sends public route coordinates, available source elevations, and forecast variables. Personal data and the selected hike time stay local. The browser requests seven UTC calendar days and selects the hours spanning the planned start through the upper duration estimate, adding hours if weather lengthens that estimate. Forecasts are sampled at the trailhead and at the verified upper point for Flattop. Ranges are approximate point forecasts. [Forecast API and variables](https://open-meteo.com/en/docs)
+- **Refresh behavior** · Forecasts are cached in the browser by sample coordinates for one hour. The detail button refreshes the forecast, while navigation and comparisons reuse fresh responses. Stale cached values may be displayed with their fetch time. Stale, failed, partial, past, and out-of-window forecasts are excluded from estimates. Missing or repeated times during a daylight saving clock change require a different start time.
+- **Estimate** · Feels-like extremes, precipitation, and gusts can add time and strain to the group estimate. The forecast panel identifies the conditions used and shows how they changed the upper end of the time range.
+- **Official alerts** · Each detail page reads the keyless public JSON feed used by that park’s own conditions page and keeps the result in memory for 15 minutes. Alerts are park-wide. If the feed is unavailable, the official conditions link remains visible. A weather forecast cannot establish access, passability, or the presence of ice. If the park-page feed changes, restore alert coverage through the documented NPS Data API with a server-side key. [Zion conditions](https://www.nps.gov/zion/planyourvisit/conditions.htm) · [Rocky Mountain conditions](https://www.nps.gov/romo/planyourvisit/conditions.htm) · [Olympic conditions](https://www.nps.gov/olym/planyourvisit/conditions.htm) · [NPS Data API](https://www.nps.gov/subjects/digital/nps-data-api.htm)
+- **Provider terms** · The static preview uses Open-Meteo’s free noncommercial endpoint with attribution. Commercial use needs a suitable provider agreement and a server-side integration for any credentialed endpoint. [Open-Meteo terms](https://open-meteo.com/en/terms)
 
-Walk through Yosemite Valley forest to the footbridge below Lower Yosemite Fall. The paved loop offers views of the falls, but spray can make the bridge area slippery and the waterfall can be seasonal.
+## Browser data migration
 
-Start on the loop near the Lower Yosemite Fall shuttle stop. Follow the path to the footbridge and return on the opposite side of the loop. The shuttle-stop approach is outside the loop. Complete the loop across the viewing footbridge and return by the other branch to the east junction near shuttle stop 6.
-
-1.0 mi is the complete NPS loop itinerary. The mapped start is the east junction; extra travel from a parking space or shuttle is excluded. The National Park Service publishes about 50 ft of elevation gain for the full loop. The NPS trail guide lists 1 mi and approximately 50 ft gain; the assembled GIS trace measures 0.97 mi.
-
-[Official itinerary/statistics](https://www.nps.gov/yose/planyourvisit/lowerfalltrail.htm) · [Ascent source](https://www.nps.gov/yose/planyourvisit/lowerfalltrail.htm) · [Timezone source](https://www.nps.gov/yose/contacts.htm)
-
-Current NPS source segments, junction order, return path, endpoint access and distance were checked against the stored trace. This is a source review, not a field inspection.
-
-### Limberlost Trail — Shenandoah National Park
-
-Explore a forest loop on crushed greenstone with benches and interpretive features. Grades vary along this accessible-design route, so review the park’s detailed access information for your party.
-
-Begin at the Limberlost parking area, Skyline Drive mile 43. Take the greenstone path to the right; complete the loop to the neighboring access points in the same parking area. Follow the full loop back to the neighboring access point in the same Limberlost parking area.
-
-1.3 mi is the complete loop from the Limberlost parking area at Skyline Drive mile 43. The National Park Service publishes 130 ft of elevation gain for the full loop. The NPS hike page lists 130 ft gain. The GIS line measures 1.34 mi and has neighboring parking-area endpoints about 13.5 m apart; no connecting line is invented.
-
-[Official itinerary/statistics](https://www.nps.gov/thingstodo/limberlost.htm) · [Ascent source](https://www.nps.gov/thingstodo/limberlost.htm) · [Timezone source](https://time.gov/)
-
-Current NPS source segments, junction order, return path, endpoint access and distance were checked against the stored trace. This is a source review, not a field inspection.
-
-### Desert Discovery Trail — Saguaro National Park
-
-Explore Sonoran Desert plants on a short paved interpretive loop in the Tucson Mountain District. The route has changing slopes and little protection from desert heat; carry water and check current park guidance.
-
-Begin at the dedicated Desert Discovery parking area on Kinney Road, about one mile northwest of Red Hills Visitor Center. The loop returns to neighboring access points in the same parking area. Complete the paved loop to the neighboring access point in the same Desert Discovery parking area.
-
-0.4 mi is the NPS accessibility-survey loop measurement, rounded from the mapped 0.38 mi trace. The NPS accessibility survey measured 25.8 ft of loop gain, rounded to 26 ft. Generic park summaries also describe this as 0.5 mi. This itinerary follows the specific accessibility survey and its 25.8 ft cumulative gain, rounded to 26 ft; parking-area endpoints are about 13.5 m apart.
-
-[Official itinerary/statistics](https://www.nps.gov/sagu/planyourvisit/tmd-trail-accessibility.htm) · [Ascent source](https://www.nps.gov/sagu/planyourvisit/tmd-trail-accessibility.htm) · [Timezone source](https://www.nps.gov/sagu/planyourvisit/accessibility.htm)
-
-Current NPS source segments, junction order, return path, endpoint access and distance were checked against the stored trace. This is a source review, not a field inspection.
-
-## Publication and compatibility
-
-`dist/publication.js` enforces the selected six park/route pairs, one per park, required descriptive/source fields, known numeric distance/ascent, reviewed park timezone, valid review date, source IDs, continuous valid geometry, start/length and return-access checks. Missing facts are rejected with actionable console diagnostics, never replaced by zero. Optional facts remain unknown. A structural gate cannot prove source truth: human review is still required.
-
-The seven-record snapshot and importer manifest retain Flattop for archival compatibility, not publication: its ascent/distance conventions conflict. Bryce has no existing complete hike and was not added. Stable IDs, history, comparisons and preferences remain stored. Archived routes show unavailable planning; saved USGS segment links retain their original lookup, never primary discovery. Storage keys/schema are unchanged.
-
-Refresh using `python3 scripts/import-routes.py` only after reviewing official facts, source IDs, joins and distance conventions. App IDs do not depend on mutable ArcGIS object IDs. [NPS geometry source](https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails_Geographic/FeatureServer/0). Timezone identifiers are implementation mappings from park time statements; Shenandoah Eastern time is a geographic inference from Virginia on the [official timezone map](https://time.gov/).
-
-## Weather, alerts and estimates
-
-Forecasts are explicitly unavailable. No Open-Meteo requests are made because its [free endpoint terms](https://open-meteo.com/en/terms) exclude commercial use. Old forecast caches and weather selections are not used for difficulty, time, food or water. Missing weather does not mean mild weather: check official park weather. No paid alternative was added. NWS is a possible free follow-up, not an implemented/verified forecast integration.
-
-Park-wide NPS alerts remain optional, best-effort enrichment. Active flags/start/end dates are filtered; in-memory freshness is 15 minutes. Failed/stale states retain official conditions links. No feed result establishes a route is safe/open. Undocumented feeds have no established schema, quota or availability guarantee. Failure does not remove route facts or planning.
-
-Moving time uses group pace, known ascent/terrain, optional comparable personal outings, pack load and separate breaks/stops. Firm limits may rule out a hike. Food/water are editable rough ranges; unknown ingredients/refills need checking. No held-out prediction validation exists. Personal planning data is not sent to providers.
-
-## Attribution and service limits
-
-No claim to original U.S. Government works. NPS-created material is generally public domain except separately credited works/protected marks; no endorsement implied. Existing photos retain NPS credits/source links; missing imagery is unavailable. [NPS disclaimer](https://www.nps.gov/aboutus/disclaimer.htm).
-
-Leaflet 1.9.4 remains pinned with integrity checks on UNPKG. Maps require CDN/OSM availability. Visible OSM attribution/issue link, HTTPS tiles, normal browser caching/referrer and on-demand viewing remain; no bulk download/prefetch. [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/) is best effort, not an SLA; commercial/heavy access may be blocked. Public hosting must recheck contact/identification and traffic requirements; unlimited production capacity is not claimed. [UNPKG documentation](https://unpkg.com/).
+The first successful v2 load on the same origin migrates `trail-gauge-v1` into `trail-gauge-v2`. Exact built-in profile fingerprints, identifiable seeded presets and comparison choices, explicitly marked sample reviews, and preset weather are removed. Edited records, ambiguous legacy group arrays, saved preferences, and user reviews are preserved. Stable IDs connect verified routes to old reviews. History keeps reviews of unavailable routes. Any stored conversation content is retained locally as archived data. The sample conversation and thread UI have been removed.
 
 ## Verification
 
-`node --test tests/*.test.mjs` and `git diff --check` are the repository checks. No dependency manifest, build, typecheck or lint command exists.
+```sh
+node --test tests/*.test.mjs
+git diff --check
+```
 
-Regressions cover six parks, publication negatives, archived data, forecast/cache isolation, optional provider failures, alert dates, migration, planning/packing and retained archived USGS helpers. Fixtures do not establish real provider/browser compatibility. Browser evidence uses a disposable loopback origin; previous nationwide/forecast checks do not prove this milestone.
+- **Automated checks** · 29 passing tests cover optional profile fields, firm limits, separate moving time and rest, calibration, food exclusions, water estimates and privacy, the nationwide map, trail lookup, nationwide querying and pagination, route coverage and geometry, fresh state, exact and ambiguous migration, guest effect on recommendation, local time zones and daylight saving transitions, weather adjustment, stale and failed forecasts, missing forecast coverage, and alert parsing.
+- **Nationwide map browser checks** · Verified live USGS linework and click lookup near Zion and on Flattop Mountain in Alaska. Verified the return link and layout at a 390 × 844 phone viewport.
+- **Nationwide browser checks** · Live name search returned trails without a state filter. Alaska and New Hampshire state searches returned mapped segments. Hawaii browsing advanced to a different second page, and its segment map fit a 390 × 844 viewport. Lower Yosemite Fall entered the group comparison with a live Pacific Time forecast. Desert Discovery used Arizona time.
+- **Local browser** · Checked desktop and a 390 × 844 phone viewport. Verified clean setup, empty groups and History, solo and guest comparison, and review persistence after reload. The region and detail maps rendered the sourced route and provider attribution.
+- **Provider checks** · Loaded two distinct Flattop forecasts and a live NPS Trail Ridge Road notice. Browser checks also covered an out-of-window date. Isolated test fixtures covered a provider failure with no cache, a stale cached forecast, missing geometry, and migration of an authored review and a modified group.
+- **Phase 2 browser checks** · Used a separate local origin with location permission denied. Verified quick setup, park filtering, favorite and skip/undo, a guest’s firm limit, no-fit recommendations, editable checklist progress across reload, water capacity and refill flags, an unverified ingredient exclusion, and a dated carrier observation. A completed review changed the moving estimate. Excluding it restored the prior estimate. Tested the packing and detail screens at a 390 × 844 phone viewport. The USGS nearby endpoint returned results for a public test location.
+- **Scope** · Phone verification used an emulated viewport. Tracking, sharing, and community accounts are later phases. The preview runs locally.

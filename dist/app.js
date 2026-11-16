@@ -5,16 +5,18 @@ import { readPlanningProfile } from './profile-planning.js';
 import { altitudeNotes, terrainPaceCost } from './personalization.js';
 import { reviewPage, reviewRecord } from './reviews.js';
 import { readNumber, readText } from './forms.js';
-import { mountUSSegment, usSegmentPage } from './us-trail-pages.js';
+import { mountUSMap } from './us-map.js';
 import { parseMapView } from './us-map-data.js';
+import { mountUSSearch, mountUSSegment, usSearchPage, usSegmentPage } from './us-trail-pages.js';
 import { searchOptions } from './us-trails.js';
 import { regions, parks, legacyTrails, hasGeometry, loadCatalog } from './catalog.js';
-import { factorNames, factorWeights, estimate } from './model.js';
+import { factorNames, factorWeights, estimate, weatherStress } from './model.js';
 import { estimatedTime, groupDistance, groupTips, bestGroupFit, timeRange, groupFit, duration } from './planning.js';
 import { mountMap, removeMap } from './map.js';
 import { escapeHtml, historyPage, profilePage, friendsPage, groupPage } from './community.js';
 import { loadState, storageKey } from './state.js';
-import { alertsMaxAge, fetchAlerts, formatLocal } from './conditions.js';
+import { alertsMaxAge, fetchAlerts, fetchForecast, forecastFor, forecastMaxAge, forecastRequest, forecastSource,
+  formatLocal, readForecast, writeForecast } from './conditions.js';
 
 const screen = document.querySelector('#screen');
 const headerMenu = document.querySelector('.header-menu');
@@ -24,7 +26,9 @@ const currentGroup = () => state.people.filter(person => state.memberIds.include
 const verifiedTrail = id => trails.find(trail => trail.id === id);
 const trailFor = id => verifiedTrail(id) ?? (Object.hasOwn(legacyTrails, id) ? { ...legacyTrails[id], id } : null);
 const selectedTrails = () => state.compare.map(verifiedTrail).filter(Boolean);
+const routeWeather = new Map();
 const parkAlerts = new Map();
+const forecastRequests = new Map();
 const alertRequests = new Map();
 let freshnessTimer;
 let nationalRequest;
@@ -44,9 +48,16 @@ function save() {
 const trailStats = trail => `${trail.miles} mi · ${trail.gain.toLocaleString('en-US')} ft gain`;
 const trailLink = trail => `#trail/${encodeURIComponent(trail.id)}`;
 const regionFor = trail => regions.find(region => region.id === trail.region);
+const localSnapshot = trail => {
+  if (!routeWeather.has(trail.id)) routeWeather.set(trail.id, { snapshot: readForecast(trail, localStorage) });
+  return routeWeather.get(trail.id);
+};
 const contextFor = trail => ({ trip: state.trips[tripKey(trail, currentGroup())] ?? defaultTrip, history: state.history });
-// Forecast caches and user-era weather selections are intentionally excluded.
-const weatherFor = () => null;
+const conditionsFor = trail => {
+  const { snapshot, status } = localSnapshot(trail);
+  return forecastFor(trail, currentGroup(), state.hikePlan, snapshot, status, Date.now(), contextFor(trail));
+};
+const weatherFor = trail => conditionsFor(trail).weather ?? null;
 const resultFor = trail => estimate(trail, currentGroup(), weatherFor(trail));
 const timeFor = trail => estimatedTime(trail, currentGroup(), weatherFor(trail), contextFor(trail));
 const fitFor = trail => groupFit(trail, currentGroup(), state.fitBudget ?? 180, weatherFor(trail), contextFor(trail));
@@ -92,7 +103,7 @@ function factorBreakdown(result) {
   }).join('')}</div>`;
 }
 
-
+const browseUS = '<a class="button secondary browse-us" href="#us-trails">Browse U.S. trails</a>';
 
 function exploreCard(trail, nearbyMiles) {
   const result = resultFor(trail);
@@ -152,10 +163,9 @@ function planningCard(trail) {
         <div><dt>Surface</dt><dd>${trail.surface ?? 'Unavailable'}</dd></div>
         <div><dt>Crossings</dt><dd>${trail.crossings ?? 'Unverified'}</dd></div>
         <div><dt>Trailhead</dt><dd>${trail.trailheadName}</dd></div>
-        <div><dt>Route time zone</dt><dd>${trail.timeZone} · <a href="${trail.timeZoneSource}" target="_blank" rel="noopener">Official time zone map</a></dd></div>
         <div><dt>Typical grade</dt><dd>${trail.typicalGrade == null ? 'Unavailable' : trail.typicalGrade + '%'}</dd></div>
       </dl>
-      <p class="planning-note">${trail.access} ${trail.turnaround} ${trail.gainNote}</p><p class="planning-note">${trail.distanceConvention} ${trail.statsNote}</p><p class="planning-note">Reviewed ${trail.reviewDate}. ${trail.geometryReview}</p>
+      <p class="planning-note">${trail.access} ${trail.gainNote}</p>
       <p class="planning-note"><a href="${trail.statsSource}" target="_blank" rel="noopener">NPS trail information ↗</a>
         ${trail.guideSource ? ` · <a href="${trail.guideSource}" target="_blank" rel="noopener">NPS route guide ↗</a>` : ''}
         ${trail.upperPoint ? ` · <a href="${trail.upperPoint.source}" target="_blank" rel="noopener">USGS elevation sample ↗</a>` : ''}</p>
@@ -220,14 +230,14 @@ function comparePage() {
   const group = currentGroup();
   return `<a class="back" href="#explore">← Explore</a>
     <div class="intro"><span class="eyebrow">Trail planner</span><h1>Compare hikes</h1>
-      <p>${selected.length < 2 ? 'Pick two or three trails from the catalog to compare them.' : 'Compare terrain difficulty and estimated time; forecasts are unavailable.'}</p></div>
+      <p>${selected.length < 2 ? 'Pick two or three trails from the catalog to compare them.' : 'Compare difficulty, time, and forecast conditions.'}</p></div>
     <section class="card fit-card"><span class="eyebrow">Group recommendation</span><h2>Best fit for your group</h2>
       <p>${escapeHtml(state.groupName)} · ${group.length} ${group.length === 1 ? 'hiker' : 'hikers'} · <a href="#group/compare">Edit group</a></p>
       <div class="fit-verdict" id="fit-verdict" aria-live="polite">${compareVerdict(selected, group, budget)}</div>
       <form id="fit-form" class="fields">
         <label class="full-width">Time budget (minutes)<input name="budget" type="number" min="5" max="10080" required value="${escapeHtml(budget)}"></label>
         ${planFields()}
-        <p class="planning-note full-width">Start time is local to each trail. Trip times are saved locally; forecasts are unavailable.</p>
+        <p class="planning-note full-width">Start time is local to each trail. Set a date and time to include the forecast.</p>
         <button class="button" type="submit">Update recommendation</button>
         <p class="planning-note full-width" data-plan-status role="status"></p>
       </form>
@@ -240,14 +250,33 @@ function comparePage() {
 }
 
 function mapPage(region) {
-  const localTrails = region ? trails.filter(trail => trail.region === region.id) : trails;
-  return `<div class="intro"><h1>${region ? region.name : 'National parks'} trail map</h1>
-    <p>Six curated park hikes. Select a pin or a route below; no nationwide trail segments.</p></div>
-    <div class="map-controls"><label>Map view<select data-map-region>
-      <option value="us"${region ? '' : ' selected'}>All covered parks</option>
-      ${regions.map(area => `<option value="${area.id}"${area.id === region?.id ? ' selected' : ''}>${area.name}</option>`).join('')}
-    </select></label></div>
-    <section class="map-panel" aria-label="Curated park hikes">${mapPanel(localTrails)}</section>`;
+  const regionPicker = `<label>Map view<select data-map-region>
+    <option value="us"${region ? '' : ' selected'}>United States</option>
+    ${regions.map(area => `<option value="${area.id}"${area.id === region?.id ? ' selected' : ''}>Verified hikes · ${area.name}</option>`).join('')}
+    </select></label>`;
+  if (region) {
+    const localTrails = trails.filter(trail => trail.region === region.id);
+    return `<div class="intro"><h1>${region.name} trail map</h1>
+      <p>Hover over or tap a pin to see a verified hike.</p>${browseUS}</div>
+      <div class="map-controls">${regionPicker}</div>
+      <section class="map-panel" aria-label="${region.name} trails">${mapPanel(localTrails)}</section>`;
+  }
+  return `<div class="intro"><h1>U.S. trail map</h1>
+    <p>Explore the USGS trail layer, including land, snow, and water routes.</p></div>
+    <div class="map-controls">${regionPicker}
+      <label>Jump to a state<select data-us-map-state disabled><option value="">Choose a state</option></select></label>
+      <div class="map-actions"><a class="button secondary" href="#us-trails">Search trails</a>
+        <button class="button secondary" type="button" data-us-map-reset disabled>U.S. overview</button></div></div>
+    <section class="map-panel" aria-label="Nationwide trail map">
+      <div id="trail-map" aria-label="Interactive U.S. trail map">Loading map…</div>
+      <div class="us-map-legend"><span><i class="us-map-line-key" aria-hidden="true"></i>USGS trail lines</span><span>Blue pins mark verified hikes</span></div>
+      <p class="planning-note" data-trail-layer-status role="status">Loading the nationwide map…</p>
+      <button class="compare-toggle" type="button" data-trail-layer-retry hidden>Retry trail layer</button>
+      <p class="planning-note" data-basemap-status role="status"></p>
+      <p class="planning-note">Coverage varies by area. Check the trail type and local access before hiking.
+        <a href="https://www.usgs.gov/national-digital-trails/qas-about-usgs-trail-data" target="_blank" rel="noopener">About USGS coverage ↗</a>
+        · <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener">Report a basemap issue ↗</a></p>
+    </section>`;
 }
 
 function gauge(score) {
@@ -284,8 +313,44 @@ function difficultyPanel(trail) {
       : '<p class="planning-note">Choose who’s hiking to see the group recommendation.</p>'}`;
 }
 
-function forecastPanel() {
-  return '<p role="status">Forecast unavailable: no commercially permitted weather provider is configured.</p><p>Existing forecast caches are not used. Time, difficulty, food and water estimates exclude weather. Check official park weather before leaving; missing forecasts do not mean mild conditions.</p>';
+const forecastMessages = {
+  unplanned: 'Weather unavailable. Choose a date and start time.',
+  pending: 'Fetching hourly forecast…',
+  outside: 'Weather unavailable for the full hike window. It is outside the forecast coverage.',
+  failed: 'Weather unavailable. Open-Meteo could not be reached or returned incomplete data.',
+  coverage: 'Weather unavailable. The provider has incomplete coverage for this route or time.',
+  invalid: 'Weather unavailable. Choose a valid local time outside the daylight saving clock change.',
+  stale: 'Weather unavailable for estimates. The cached forecast is stale.'
+};
+
+const rangeText = (min, max, unit) => min === max ? `${Math.round(min)}${unit}`
+  : `${Math.round(min)}–${Math.round(max)}${unit}`;
+
+function forecastPanel(trail) {
+  const view = conditionsFor(trail);
+  const local = timestamp => formatLocal(timestamp, trail.parkCode);
+  const weatherImpact = weatherStress(view.weather);
+  const contributing = ['feels-like temperature', 'precipitation', 'wind gusts'].filter((_, index) => weatherImpact[index] > 0);
+  const baseline = timeRange(trail, currentGroup(), null, contextFor(trail)).high;
+  const added = view.weather ? timeRange(trail, currentGroup(), view.weather, contextFor(trail)).high - baseline : 0;
+  return `<p role="status">${forecastMessages[view.status] ?? `Planned window · ${local(view.start)} to ${local(view.end)}`}</p>
+    ${view.status === 'stale' ? `<p>Cached window · ${local(view.start)} to ${local(view.end)}</p>` : ''}
+    <p>Source <a href="${forecastSource}" target="_blank" rel="noopener">Open-Meteo ↗</a>
+      ${view.fetchedAt ? ` · Last fetched ${local(view.fetchedAt)}${view.stale || view.status === 'stale' ? ' · Stale cache' : ''}` : ''}</p>
+    ${view.samples?.map(sample => `<details class="forecast-sample">
+      <summary><strong>${sample.name}${sample.elevationFt ? ' · ' + sample.elevationFt.toLocaleString('en-US') + ' ft' : ''}</strong>
+      <span>${rangeText(sample.tempMin, sample.tempMax, '°F')} · Feels ${rangeText(sample.apparentMin, sample.apparentMax, '°F')}</span>
+      <span>Precipitation up to ${sample.probabilityMax}% · ${sample.types.join(', ')} · Gusts up to ${Math.round(sample.gustMax)} mph</span></summary>
+      <div class="forecast-scroll" tabindex="0" role="region" aria-label="${sample.name} hourly forecast"><table>
+        <thead><tr><th scope="col">Local hour</th><th scope="col">Temp</th><th scope="col">Feels</th><th scope="col">Precip.</th><th scope="col">Gusts</th></tr></thead>
+        <tbody>${sample.hours.map(row => `<tr><th scope="row">${local(row.time)}</th><td>${Math.round(row.temperature)}°F</td><td>${Math.round(row.apparent)}°F</td>
+          <td>${row.probability === null ? '—' : row.probability + '%'} · ${row.type}</td><td>${Math.round(row.gust)} mph</td></tr>`).join('')}</tbody></table></div>
+      </details>`).join('') ?? ''}
+    <p>${view.weather ? (contributing.length
+      ? `The estimate allows for ${contributing.join(', ')}. The upper time estimate adds ${added} min after rounding.`
+      : 'The sampled weather adds no extra time or difficulty.')
+      : 'Any estimate uses terrain and group only.'}</p>
+    <p>For closures, crossing conditions, and ice on the trail, check the official park conditions below.</p>`;
 }
 
 function alertsPanel(parkCode) {
@@ -294,7 +359,7 @@ function alertsPanel(parkCode) {
   const fresh = entry?.snapshot && Date.now() - entry.snapshot.fetchedAt < alertsMaxAge && entry.status !== 'failed';
   return `<h2>Official park conditions</h2>
     <p class="planning-note"><a href="${park.conditions}" target="_blank" rel="noopener">Current conditions and all alerts from NPS ↗</a></p>
-    <p class="planning-note">${fresh ? `Park-wide alerts (not route safety or opening confirmation) · Checked ${formatLocal(entry.snapshot.fetchedAt, parkCode)}`
+    <p class="planning-note">${fresh ? `Park-wide alerts · Checked ${formatLocal(entry.snapshot.fetchedAt, parkCode)}`
       : entry?.status === 'pending' || !entry ? 'Checking park-wide alerts…' : 'Live park alerts are unavailable. Check the park conditions page.'}</p>
     ${fresh ? (entry.snapshot.alerts.length ? `<ul class="alert-list">${entry.snapshot.alerts.map(alert => {
       let url;
@@ -312,7 +377,7 @@ function trailPage(trail) {
   const size = currentGroup().length;
   return `<a class="back" href="#explore">← Explore</a>
     <article class="card detail"><p class="trail-park">${trail.park} · ${trail.routeType}</p>
-    <h1>${trail.name}</h1><p>${escapeHtml(trail.description)}</p>
+    <h1>${trail.name}</h1>
     <div id="detail-estimate">${difficultyPanel(trail)}</div>
     <div class="trail-actions detail-actions">${compareButton(trail)}${preferenceButtons(trail, state)}</div>
     <p class="compare-status" role="status"></p>
@@ -323,7 +388,7 @@ function trailPage(trail) {
       <p class="planning-note">Set your start in ${parks[trail.parkCode].timeLabel}.</p>
       <form id="weather-form" class="fields">
         ${planFields(true)}
-        <button class="button full-width" type="submit">Save trip time</button>
+        <button class="button full-width" type="submit">Get forecast</button>
       </form>
       <div id="forecast-status">${forecastPanel(trail)}</div>
     </details>
@@ -389,11 +454,35 @@ function syncLive() {
     update('#fit-verdict', compareVerdict(watched, currentGroup(), state.fitBudget ?? 180));
     update('#comparison', comparisonTable(watched));
   }
-  const expiration = [];
+  const expiration = watched.flatMap(item => {
+    const snapshot = localSnapshot(item).snapshot;
+    const request = forecastRequest(item, state.hikePlan);
+    return [snapshot?.fetchedAt + forecastMaxAge, request.start + 60000];
+  });
   if (page === 'trail' && watched.length) expiration.push(parkAlerts.get(trail.parkCode)?.snapshot?.fetchedAt + alertsMaxAge);
   const now = Date.now();
   const next = Math.min(...expiration.filter(time => time > now));
   if (Number.isFinite(next)) freshnessTimer = setTimeout(syncLive, next - now);
+}
+
+async function refreshForecast(trail, force = false) {
+  if (forecastRequest(trail, state.hikePlan).status !== 'eligible' || forecastRequests.has(trail.id)) return;
+  const entry = localSnapshot(trail);
+  if (!force && entry.status !== 'failed' && entry.snapshot && Date.now() - entry.snapshot.fetchedAt < forecastMaxAge) return;
+  entry.status = 'pending';
+  const pending = fetchForecast(trail);
+  forecastRequests.set(trail.id, pending);
+  syncLive();
+  try {
+    entry.snapshot = await pending;
+    writeForecast(trail, localStorage, entry.snapshot);
+    entry.status = 'ready';
+  } catch {
+    entry.status = 'failed';
+  } finally {
+    forecastRequests.delete(trail.id);
+    syncLive();
+  }
 }
 
 async function refreshAlerts(parkCode) {
@@ -407,8 +496,7 @@ async function refreshAlerts(parkCode) {
   try {
     entry.snapshot = await pending;
     entry.status = 'ready';
-  } catch (error) {
-    console.error(`Park alerts unavailable for ${parkCode}: ${error.message}. Check the official conditions page.`);
+  } catch {
     entry.status = 'failed';
   } finally {
     alertRequests.delete(parkCode);
@@ -436,7 +524,9 @@ function render(focus = false) {
   if (setup) {
     screen.innerHTML = profilePage(null, true);
   } else if (page === 'us-trails') {
-    screen.innerHTML = '<div class="intro"><h1>Catalog narrowed to national parks</h1><p>Nationwide discovery is archived. Saved segment links still work.</p><a class="button" href="#explore">Explore six park hikes</a></div>';
+    screen.innerHTML = usSearchPage();
+    nationalRequest = new AbortController();
+    mountUSSearch(screen, searchOptions(params), trails, nationalRequest.signal, state);
   } else if (page === 'us-trail') {
     screen.innerHTML = usSegmentPage(searchOptions(params), parseMapView(params.get('map')));
     nationalRequest = new AbortController();
@@ -453,18 +543,21 @@ function render(focus = false) {
     const region = (verified && regionFor(verified)) || regions.find(area => area.id === id);
     screen.innerHTML = mapPage(region);
     if (region) mountMap(screen.querySelector('#trail-map'), trails.filter(item => item.region === region.id), verified);
-    else mountMap(screen.querySelector('#trail-map'), trails);
+    else mountUSMap(screen, trails, parseMapView(params.get('view')));
   } else if (page === 'compare') {
     screen.innerHTML = comparePage();
+    selectedTrails().forEach(item => refreshForecast(item));
   } else if (page === 'trail' && trail) {
     screen.innerHTML = verified ? trailPage(trail) : unavailableTrailPage(trail);
     if (verified) {
       mountMap(screen.querySelector('#trail-map'), [trail], trail, true);
+      refreshForecast(trail);
       refreshAlerts(trail.parkCode);
     }
   } else if (page === 'packing' && verified) {
     const { trip, plan, suggestions, time, start } = packingFor(verified);
     screen.innerHTML = packingPage(verified, currentGroup(), trip, plan, suggestions, time, start, parks[verified.parkCode].conditions);
+    refreshForecast(verified);
   } else if (page === 'review' && trail && (verified || Object.hasOwn(state.reviews, trail.id))) {
     const review = reviewFor(trail, anchor);
     const predicted = review ? review.predicted : verified ? resultFor(verified)?.rating : null;
@@ -625,7 +718,9 @@ screen.addEventListener('submit', event => {
     if (form.id === 'fit-form') {
       state.fitBudget = Number(data.get('budget'));
       form.querySelector('[data-plan-status]').textContent = '';
+      selectedTrails().forEach(item => refreshForecast(item));
     } else if (trail) {
+      refreshForecast(trail, true);
       refreshAlerts(trail.parkCode);
     }
     save();

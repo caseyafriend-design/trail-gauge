@@ -2,8 +2,10 @@ import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { hasGeometry, loadCatalog } from '../dist/catalog.js';
-import { bestGroupFit } from '../dist/planning.js';
-import { activeAlerts, fetchAlerts, startTimestamp } from '../dist/conditions.js';
+import { estimate } from '../dist/model.js';
+import { bestGroupFit, timeRange } from '../dist/planning.js';
+import { activeAlerts, fetchAlerts, fetchForecast, forecastFor, forecastMaxAge,
+  forecastRequest, readForecast, startTimestamp, writeForecast } from '../dist/conditions.js';
 import { initialState, legacyStorageKey, loadState, migrateState, storageKey } from '../dist/state.js';
 
 const catalog = JSON.parse(await readFile(new URL('../dist/routes.geojson', import.meta.url)));
@@ -16,8 +18,8 @@ const memory = (entries = []) => {
     removeItem: key => values.delete(key) };
 };
 
-test('catalog identifies park, source, actual trailhead and complete route for six reviewed park hikes', () => {
-  assert.deepEqual(trails.map(trail => trail.id), ['riverside-walk', 'bear-lake', 'hall-of-mosses',
+test('catalog identifies park, source, actual trailhead and complete route for seven verified hikes', () => {
+  assert.deepEqual(trails.map(trail => trail.id), ['riverside-walk', 'bear-lake', 'flattop-mountain', 'hall-of-mosses',
     'lower-yosemite-fall', 'limberlost', 'desert-discovery']);
   for (const trail of trails) {
     assert.ok(hasGeometry(trail));
@@ -36,14 +38,20 @@ test('catalog identifies park, source, actual trailhead and complete route for s
   }
   assert.equal(getTrail('riverside-walk').miles, 2);
   assert.equal(getTrail('riverside-walk').gain, 203);
-  assert.equal(getTrail('flattop-mountain'), undefined);
+  const flattop = getTrail('flattop-mountain');
+  assert.equal(flattop.miles, 8.8);
+  assert.equal(flattop.gain, 2849);
+  assert.ok(flattop.upperPoint.elevationFt - flattop.trailheadElevation > 2500);
+  assert.ok(flattop.geometry.coordinates.some(point => point.join(',') === flattop.upperPoint.coordinates.join(',')));
 });
 
 test('missing catalog or map geometry fails gracefully', async () => {
   assert.deepEqual(await loadCatalog(async () => ({ ok: false })), []);
   assert.deepEqual(await loadCatalog(async () => { throw new Error('offline'); }), []);
   const feature = { ...catalog.features[0], geometry: null };
-  assert.deepEqual(await loadCatalog(async () => response({ features: [feature] })), []);
+  const [trail] = await loadCatalog(async () => response({ features: [feature] }));
+  assert.equal(trail.miles, 2);
+  assert.equal(hasGeometry(trail), false);
   assert.equal(hasGeometry({ geometry: { type: 'LineString', coordinates: [[0, 0], [NaN, 1]] } }), false);
 });
 
@@ -119,11 +127,77 @@ test('slower saved guest changes the time and best group fit', () => {
 
 const now = Date.parse('2026-11-11T15:00:00Z');
 const plan = { date: '2026-11-12', start: '08:30' };
+const flattop = getTrail('flattop-mountain');
+const group = [{ fitness: 3, experience: 3 }];
+const fixtureStart = Date.parse('2026-11-12T14:00:00Z') / 1000;
+function hourlyFixture(temperature, apparent, probability, code, gust, length = 24) {
+  const series = value => Array(length).fill(value);
+  return { time: Array.from({ length }, (_, i) => fixtureStart + i * 3600), temperature_2m: series(temperature),
+    apparent_temperature: series(apparent), precipitation_probability: series(probability),
+    weather_code: series(code), wind_gusts_10m: series(gust) };
+}
+const snapshot = { fetchedAt: now, samples: [
+  { name: 'Trailhead', hourly: hourlyFixture(44, 42, 0, 1, 10) },
+  { name: 'Upper Flattop', hourly: hourlyFixture(25, 16, 85, 71, 40) }
+] };
+
 test('date and time use the park zone and reject ambiguous and missing DST times', () => {
   assert.equal(startTimestamp(plan, 'America/Denver'), Date.parse('2026-11-12T15:30:00Z'));
   assert.equal(startTimestamp(plan, 'America/Los_Angeles'), Date.parse('2026-11-12T16:30:00Z'));
   assert.equal(startTimestamp({ date: '2026-11-01', start: '01:30' }, 'America/Denver'), null);
   assert.equal(startTimestamp({ date: '2026-03-08', start: '02:30' }, 'America/Denver'), null);
+});
+
+test('uses both location samples, expands the forecast window and explains higher time and score', () => {
+  const live = forecastFor(flattop, group, plan, snapshot, null, now);
+  assert.equal(live.status, 'ready');
+  assert.equal(live.samples.length, 2);
+  assert.equal(live.samples[0].tempMax, 44);
+  assert.equal(live.samples[1].tempMax, 25);
+  assert.equal(live.samples[1].hours[0].probability, null);
+  assert.equal(live.weather.probabilityMax, 85);
+  assert.equal(live.weather.gustMax, 40);
+  assert.ok(live.weather.types.includes('Snow'));
+  const [before, after] = [timeRange(flattop, group, null), timeRange(flattop, group, live.weather)];
+  assert.ok(after.high > before.high);
+  assert.equal(live.end - live.start, after.high * 60000);
+  assert.ok(estimate(flattop, group, live.weather).score > estimate(flattop, group, null).score);
+});
+
+test('failure, stale cache, partial forecast and out-of-window coverage never enter the estimate', async () => {
+  await assert.rejects(fetchForecast(flattop, async () => ({ ok: false })));
+  await assert.rejects(fetchForecast(flattop, async () => response([{ hourly: {} }])));
+  assert.equal(forecastFor(flattop, group, plan, null, 'failed', now).status, 'failed');
+  const stale = forecastFor(flattop, group, plan, snapshot, null, now + forecastMaxAge);
+  assert.equal(stale.status, 'stale');
+  assert.equal(stale.weather, null);
+  assert.equal(stale.samples.length, 2);
+  assert.equal(forecastFor(flattop, group, plan, snapshot, 'failed', now).status, 'stale');
+  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-28' }, now).status, 'outside');
+  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-10' }, now).status, 'outside');
+  const missing = structuredClone(snapshot);
+  missing.samples[1].hourly.weather_code.fill(null);
+  assert.equal(forecastFor(flattop, group, plan, missing, null, now).status, 'coverage');
+  const tooShort = structuredClone(snapshot);
+  tooShort.samples[1].hourly = hourlyFixture(25, 16, 85, 71, 40, 5);
+  assert.equal(forecastFor(flattop, group, plan, tooShort, null, now).status, 'outside');
+});
+
+test('provider request includes both public points and cache round trips without personal fields', async () => {
+  const cached = await fetchForecast(flattop, async raw => {
+    const url = new URL(raw);
+    assert.equal(url.origin, 'https://api.open-meteo.com');
+    assert.equal(url.searchParams.get('latitude'), '40.3119986,40.3089462');
+    assert.equal(url.searchParams.get('elevation'), '2888,3754');
+    assert.equal(url.searchParams.get('timeformat'), 'unixtime');
+    assert.deepEqual([...url.searchParams.keys()].sort(),
+      ['latitude', 'longitude', 'elevation', 'hourly', 'temperature_unit', 'wind_speed_unit', 'timeformat', 'timezone', 'forecast_days'].sort());
+    return response(snapshot.samples.map(({ hourly }) => ({ hourly })));
+  });
+  const store = memory();
+  writeForecast(flattop, store, cached);
+  assert.deepEqual(readForecast(flattop, store), cached);
+  assert.equal(readForecast(getTrail('bear-lake'), store), null);
 });
 
 test('official park alert filter keeps active notices and rejects malformed provider responses', async () => {

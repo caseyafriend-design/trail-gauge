@@ -105,7 +105,7 @@ export function packingPage(trail, group, trip, plan, suggestions, time, start, 
   const entries = plan.entries ?? [];
   return `<a class="back" href="#trail/${encodeURIComponent(trail.id)}">← ${escapeHtml(trail.name)}</a>
     <div class="intro"><h1>Pack for your hike</h1><p>${escapeHtml(trail.name)} · ${group.length} ${group.length === 1 ? 'hiker' : 'hikers'}</p>
-      <p class="planning-note">Forecast unavailable. Water and food estimates exclude weather; check official park weather before leaving. <a href="#trail/${encodeURIComponent(trail.id)}/forecast">Review trip time and weather limitations</a></p></div>
+      <p class="planning-note"><a href="#trail/${encodeURIComponent(trail.id)}/forecast">Set or review the hike forecast</a></p></div>
     ${!group.length ? `<p class="card">Choose who’s hiking to create a packing plan. <a class="button secondary" href="#group/${encodeURIComponent(trail.id)}/packing">Choose hikers</a></p>` : `
     <section class="card pack-section"><h2>Trip and refill plan</h2>
       <p class="planning-note">Estimated moving time ${duration(time.movingLow)}–${duration(time.movingHigh)}.
