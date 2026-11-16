@@ -1,5 +1,5 @@
 import { checkInput, escapeHtml, numberInput, readNumber, readText, selectInput, textInput } from './forms.js';
-import { ratings, factorNames } from './model.js';
+import { factorNames } from './model.js';
 import { effortLabels } from './personalization.js';
 import { conditionsOptions } from './profile-planning.js';
 import { liters, litersRange } from './packing.js';
@@ -11,7 +11,7 @@ const textarea = (name, label, value) => `<label>${label}<textarea name="${name}
 export function reviewPage(trail, review, people, today, predicted, canLogNew) {
   const persons = { '': 'Choose a hiker', ...Object.fromEntries(people.map(person => [person.id, person.name])) };
   const self = people.find(person => person.kind === 'self') ?? people[0];
-  const factors = Object.fromEntries([...new Set([...factorNames, 'Other', ...(review?.factor ? [review.factor] : [])])].map(name => [name, name]));
+  const factors = { '': 'I don’t know', ...Object.fromEntries([...new Set([...factorNames, 'Other', ...(review?.factor ? [review.factor] : [])])].map(name => [name, name])) };
   return `<a class="back" href="#trail/${encodeURIComponent(trail.id)}">← ${escapeHtml(trail.name)}</a>
     <div class="intro"><h1>${review ? 'Edit hike review' : 'Log a completed hike'}</h1><p>${escapeHtml(trail.name)}</p></div>
     <section class="card review-summary"><h2>${review ? 'Your saved review' : 'Group estimate'}</h2>
@@ -27,9 +27,8 @@ export function reviewPage(trail, review, people, today, predicted, canLogNew) {
         ${numberInput('distance', 'Actual distance (mi)', review?.distance ?? trail.miles, .1, 250, .1)}
         ${numberInput('gain', 'Actual ascent (ft)', review?.gain ?? trail.gain, 0, 40000)}
         ${numberInput('packWeight', 'Pack load (lb)', review?.packWeight, 0, 150, .5)}
-        ${selectInput('effort', 'Perceived effort', review?.effort, { '': 'I don’t know', ...effortLabels })}
-        ${selectInput('rating', 'How hard did it feel?', review?.rating ?? 'Moderate', Object.fromEntries(ratings.map(rating => [rating, rating])))}
-        ${selectInput('factor', 'What made it hardest?', review?.factor ?? 'Other', factors)}
+        ${selectInput('effort', 'How hard did it feel?', review?.effort || ({ Easy: 'easy', Moderate: 'moderate', Hard: 'hard' }[review?.rating] ?? ''), { '': 'I don’t know', ...effortLabels })}
+        ${selectInput('factor', 'What made it hardest?', review?.factor ?? '', factors)}
       </div>
       ${textarea('note', 'Review notes', review?.note)}
       ${textarea('surface', 'Trail surface or crossing observations', review?.surface)}
@@ -67,7 +66,7 @@ export function reviewRecord(data) {
   const date = t('date');
   const reception = t('reception');
   return { date, hikerId: t('hikerId'), minutes: n('minutes'), moving: n('moving'), distance: n('distance'),
-    gain: n('gain'), packWeight: n('packWeight'), rating: t('rating'), factor: t('factor'), effort: t('effort'),
+    gain: n('gain'), packWeight: n('packWeight'), rating: effortLabels[t('effort')] ?? '', factor: t('factor'), effort: t('effort'),
     note: t('note'), surface: t('surface'), conditions: t('conditions'), sun: t('sun'), weatherNote: t('weatherNote'),
     foodEaten: t('foodEaten'), snackName: t('snackName'), snackServings: n('snackServings'),
     waterUsed: n('waterUsed'), waterRefilled: n('waterRefilled'), foodShort: data.has('foodShort'),
