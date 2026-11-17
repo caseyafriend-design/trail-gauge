@@ -42,7 +42,7 @@ The current official roster audit is a separate research artifact, not a claim t
 
 ## Remaining-park inventory
 
-Researcher roster read 2026-11-17T02:42:42.085663+00:00 from [NPS system list](https://www.nps.gov/aboutus/national-park-system.htm). This is a roster, not an itinerary audit; website codes are not assumed GIS codes. 58 parks remain without a verified planning itinerary in this catalog:
+Researcher roster read 2026-11-17T02:42:42.085663+00:00 from [NPS system list](https://www.nps.gov/aboutus/national-park-system.htm). This is a roster, not an itinerary audit; website codes are not assumed GIS codes. 57 parks remain without a verified planning itinerary in this catalog:
 
 - [Acadia National Park](https://www.nps.gov/acad/siteindex.htm) — not qualified in this batch.
 - [Arches National Park](https://www.nps.gov/arch/index.htm) — not qualified in this batch.
@@ -67,21 +67,21 @@ Researcher roster read 2026-11-17T02:42:42.085663+00:00 from [NPS system list](h
 - [Gateway Arch National Park](https://www.nps.gov/jeff/index.htm) — not qualified in this batch.
 - [Glacier Bay National Park](https://www.nps.gov/glba/index.htm) — not qualified in this batch.
 - [Glacier National Park](https://www.nps.gov/glac/index.htm) — not qualified in this batch.
-- [Grand Canyon National Park](/grca/index.htm) — not qualified in this batch.
+- [Grand Canyon National Park](https://www.nps.gov/grca/index.htm) — not qualified in this batch.
 - [Grand Teton National Park](https://www.nps.gov/grte/index.htm) — not qualified in this batch.
 - [Great Sand Dunes National Park](https://www.nps.gov/grsa/index.htm) — not qualified in this batch.
 - [Great Smoky Mountains National Park](https://www.nps.gov/grsm/index.htm) — not qualified in this batch.
 - [Guadalupe Mountains National Park](https://www.nps.gov/gumo/index.htm) — not qualified in this batch.
 - [Haleakalā National Park](https://www.nps.gov/hale/index.htm) — not qualified in this batch.
-- [Hawai'i Volcanoes National Park](/havo/index.htm) — not qualified in this batch.
+- [Hawai'i Volcanoes National Park](https://www.nps.gov/havo/index.htm) — not qualified in this batch.
 - [Hot Springs National Park](https://www.nps.gov/hosp/index.htm) — not qualified in this batch.
 - [Indiana Dunes National Park](https://www.nps.gov/indu/index.htm) — not qualified in this batch.
-- [Isle Royale National Park](/isro/index.htm) — not qualified in this batch.
+- [Isle Royale National Park](https://www.nps.gov/isro/index.htm) — not qualified in this batch.
 - [Joshua Tree National Park](https://www.nps.gov/jotr/index.htm) — not qualified in this batch.
 - [Katmai National Park](https://www.nps.gov/katm/index.htm) — not qualified in this batch.
 - [Kenai Fjords National Park](https://www.nps.gov/kefj/index.htm) — not qualified in this batch.
 - [Kings Canyon National Park](https://www.nps.gov/seki/index.htm) — not qualified in this batch.
-- [Kobuk Valley National Park](/kova/index.htm) — not qualified in this batch.
+- [Kobuk Valley National Park](https://www.nps.gov/kova/index.htm) — not qualified in this batch.
 - [Lake Clark National Park](https://www.nps.gov/lacl/index.htm) — not qualified in this batch.
 - [Lassen Volcanic National Park](https://www.nps.gov/lavo/index.htm) — not qualified in this batch.
 - [Mammoth Cave National Park](https://www.nps.gov/maca/index.htm) — not qualified in this batch.
@@ -93,7 +93,6 @@ Researcher roster read 2026-11-17T02:42:42.085663+00:00 from [NPS system list](h
 - [Petrified Forest National Park](https://www.nps.gov/pefo/index.htm) — not qualified in this batch.
 - [Pinnacles National Park](https://www.nps.gov/pinn/index.htm) — not qualified in this batch.
 - [Redwood National Park](https://www.nps.gov/redw/index.htm) — not qualified in this batch.
-- [Saguaro National Park](/sagu/index.htm) — not qualified in this batch.
 - [Sequoia National Park](https://www.nps.gov/seki/index.htm) — not qualified in this batch.
 - [Theodore Roosevelt National Park](https://www.nps.gov/thro/index.htm) — not qualified in this batch.
 - [Virgin Islands National Park](https://www.nps.gov/viis/index.htm) — not qualified in this batch.
@@ -101,4 +100,4 @@ Researcher roster read 2026-11-17T02:42:42.085663+00:00 from [NPS system list](h
 - [White Sands National Park](https://www.nps.gov/whsa/index.htm) — not qualified in this batch.
 - [Wind Cave National Park](https://www.nps.gov/wica/index.htm) — not qualified in this batch.
 - [Wrangell-St. Elias National Park](https://www.nps.gov/wrst/index.htm) — not qualified in this batch.
-- [Yellowstone National Park](/yell/index.htm) — not qualified in this batch.
+- [Yellowstone National Park](https://www.nps.gov/yell/index.htm) — not qualified in this batch.

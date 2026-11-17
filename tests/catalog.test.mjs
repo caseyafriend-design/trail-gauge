@@ -35,6 +35,22 @@ test('every manifest route survives loading with finite sourced facts and regist
   assert.equal(parks.grba.timeZone, 'America/Los_Angeles');
 });
 
+test('remaining-park inventory excludes shipped parks and uses absolute official links', async () => {
+  const document = await readFile(new URL('../docs/catalog-batch-1.md', import.meta.url), 'utf8');
+  const inventory = document.split('## Remaining-park inventory')[1];
+  const rows = [...inventory.matchAll(/^- \[([^\]]+)\]\(([^)]+)\)/gm)];
+  const covered = new Set(data.features.map(feature => feature.properties.parkCode));
+  const remaining = 64 - covered.size;
+  assert.match(inventory, new RegExp(` ${remaining} parks remain`));
+  assert.equal(rows.length, remaining);
+  assert.equal(new Set(rows.map(row => row[1])).size, remaining);
+  for (const [, name, link] of rows) {
+    assert.match(link, /^https:\/\/www\.nps\.gov\/[a-z]{4}\//, name);
+    const code = new URL(link).pathname.split('/')[1];
+    assert.ok(!covered.has(code), `${name} already has a shipped itinerary`);
+  }
+});
+
 test('Alpine Lakes reproduces full official linework with exact junctions and retraced approach', () => {
   const result = spawnSync('python3', ['-c', `import json,importlib.util
 from pathlib import Path
