@@ -51,6 +51,29 @@ test('remaining-park inventory excludes shipped parks and uses absolute official
   }
 });
 
+test('coverage snapshot accounts for each official roster park and every shipped itinerary', async () => {
+  const document = await readFile(new URL('../docs/catalog-coverage.md', import.meta.url), 'utf8');
+  const rows = [...document.matchAll(/^- \[([^\]]+)\]\(([^)]+)\) — (\d+) itineraries([^\n]*)/gm)];
+  assert.equal(rows.length, 64, '2026-11-17 NPS roster snapshot');
+  assert.equal(new Set(rows.map(row => row[1])).size, 64);
+  assert.ok(rows.some(row => row[1] === 'Chiricahua National Park'));
+  const recordedIds = [];
+  for (const [, name, link, count, detail] of rows) {
+    assert.match(link, /^https:\/\/www\.nps\.gov\/[a-z]{4}\//, name);
+    const code = new URL(link).pathname.split('/')[1];
+    const ids = data.features.filter(feature => feature.properties.parkCode === code).map(feature => feature.id);
+    assert.equal(Number(count), ids.length, name);
+    const listed = [...detail.matchAll(/`([^`]+)`/g)].map(match => match[1]);
+    assert.deepEqual(listed, ids, name);
+    recordedIds.push(...listed);
+  }
+  assert.deepEqual(recordedIds.sort(), data.features.map(feature => feature.id).sort());
+  assert.equal(rows.filter(row => Number(row[3]) > 0).length, 7);
+  assert.equal(rows.filter(row => Number(row[3]) === 0).length, 57);
+  assert.match(document, /2026-11-17/);
+  assert.match(document, /https:\/\/www.nps.gov\/aboutus\/national-park-system.htm/);
+});
+
 test('Alpine Lakes reproduces full official linework with exact junctions and retraced approach', () => {
   const result = spawnSync('python3', ['-c', `import json,importlib.util
 from pathlib import Path
