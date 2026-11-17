@@ -6,10 +6,12 @@ export const regions = [
   { id: 'olympic', name: 'Olympic Peninsula', description: 'Verified routes in Olympic National Park.' },
   { id: 'california', name: 'California', description: 'Verified routes in Yosemite National Park.' },
   { id: 'virginia', name: 'Virginia', description: 'Verified routes in Shenandoah National Park.' },
-  { id: 'arizona', name: 'Arizona', description: 'Verified routes in Saguaro National Park.' }
+  { id: 'arizona', name: 'Arizona', description: 'Verified routes in Saguaro National Park.' },
+  { id: 'great-basin', name: 'Eastern Nevada', description: 'Verified routes in Great Basin National Park.' }
 ];
 
 export const parks = {
+  grba: { timeZone: 'America/Los_Angeles', timeLabel: 'Pacific Time', conditions: 'https://www.nps.gov/grba/planyourvisit/conditions.htm' },
   zion: { timeZone: 'America/Denver', timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/zion/planyourvisit/conditions.htm' },
   brca: { timeZone: 'America/Denver', timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/brca/planyourvisit/conditions.htm' },
   romo: { timeZone: 'America/Denver', timeLabel: 'Mountain Time', conditions: 'https://www.nps.gov/romo/planyourvisit/conditions.htm' },

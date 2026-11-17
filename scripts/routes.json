@@ -300,5 +300,48 @@
       ]
     ],
     "maxParkingGapMeters": 15
+  },
+  {
+    "id": "alpine-lakes-loop",
+    "name": "Alpine Lakes Loop",
+    "region": "great-basin",
+    "stateCode": "NV",
+    "parkCode": "grba",
+    "park": "Great Basin National Park",
+    "trailheadName": "Bristlecone Trailhead \u00b7 end of Wheeler Peak Scenic Drive",
+    "routeType": "Loop with out-and-back approach",
+    "miles": 2.7,
+    "gain": 440,
+    "gainNote": "NPS lists 440 ft elevation gain for the 2.7-mile itinerary; the guide does not distinguish cumulative ascent from net elevation change.",
+    "surface": "Native surface in NPS GIS",
+    "unevenFooting": true,
+    "access": "Begin and finish at Bristlecone Trailhead, visiting Teresa and Stella lakes via the signed Alpine Lakes Loop and short shared Wheeler Peak Summit Trail section. Seasonal Scenic Drive closure changes access; this itinerary excludes any road approach. No roadside parking or pets; vehicles over 24 feet are prohibited above Upper Lehman Creek. Carry water and check altitude, thunderstorms and current park conditions.",
+    "statsSource": "https://www.nps.gov/thingstodo/hike-the-alpine-lakes-loop.htm",
+    "guideSource": "https://www.nps.gov/grba/planyourvisit/conditions.htm",
+    "trailheadElevation": 9890,
+    "segments": [
+      [
+        19868,
+        "Alpine Lakes Loop Trail"
+      ],
+      [
+        18590,
+        "Alpine Lakes Loop Trail"
+      ],
+      [
+        17204,
+        "Wheeler Peak Summit Trail",
+        "reverse"
+      ],
+      [
+        17552,
+        "Alpine Lakes Loop Trail"
+      ],
+      [
+        19868,
+        "Alpine Lakes Loop Trail",
+        "reverse"
+      ]
+    ]
   }
 ]

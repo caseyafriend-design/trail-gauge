@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {writeFile} from 'node:fs/promises';
 import {browserSession} from './browser-session.mjs';
+import {catalogChecks} from './browser-catalog.mjs';
 import {weatherChecks} from './browser-weather.mjs';
 await browserSession(async({c,evaluate,wait,goto,shot,events,scratch,root,origin})=>{
  await c('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
@@ -117,6 +118,7 @@ await browserSession(async({c,evaluate,wait,goto,shot,events,scratch,root,origin
  const errors=events.filter(e=>e.method==='Runtime.exceptionThrown');assert.equal(errors.length,0,JSON.stringify(errors));
  await writeFile(scratch+'/runtime-evidence.json',JSON.stringify({origin,root,urls,errors,checks:'desktop/mobile keyboard, overflow, route/access, packing and reviews persisted'},null,2));
  console.log('PASS compare/history retained, no Open-Meteo requests, no uncaught exceptions');
+ await catalogChecks({c,evaluate,wait,goto,shot});
  await weatherChecks({c,evaluate,wait,goto,shot,events,scratch});
  const manifest=await evaluate("import('./photos.js').then(m=>m.photos)");
  await evaluate(`document.body.innerHTML='<h1>Rights-reviewed photo contact sheet</h1><div id="photos"></div>';document.body.style='display:block;padding:20px;background:#202823';document.querySelector('#photos').style='display:grid;grid-template-columns:repeat(4,1fr);gap:15px';${JSON.stringify(manifest)}.forEach(p=>{const f=document.createElement('figure');f.style='margin:0';const i=document.createElement('img');i.src='photos/'+p.trailId+'-'+p.id+'.jpg';i.style='width:100%;height:220px;object-fit:contain';const c=document.createElement('figcaption');c.textContent=p.trailId+' / '+p.id+' / '+p.creator;f.append(i,c);document.querySelector('#photos').append(f);})`);

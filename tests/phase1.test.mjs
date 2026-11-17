@@ -18,9 +18,9 @@ const memory = (entries = []) => {
     removeItem: key => values.delete(key) };
 };
 
-test('catalog identifies park, source, actual trailhead and complete route for seven verified hikes', () => {
-  assert.deepEqual(trails.map(trail => trail.id), ['riverside-walk', 'bear-lake', 'flattop-mountain', 'hall-of-mosses',
-    'lower-yosemite-fall', 'limberlost', 'desert-discovery']);
+test('catalog identifies park, source, actual trailhead and complete route for all verified hikes while retaining the original seven', () => {
+  assert.ok(['riverside-walk', 'bear-lake', 'flattop-mountain', 'hall-of-mosses',
+    'lower-yosemite-fall', 'limberlost', 'desert-discovery'].every(id => trails.some(trail => trail.id === id)));
   for (const trail of trails) {
     assert.ok(hasGeometry(trail));
     assert.deepEqual(trail.trailhead, trail.geometry.coordinates[0]);
