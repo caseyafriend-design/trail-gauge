@@ -5,7 +5,7 @@ export async function catalogChecks({c,evaluate,wait,goto,shot}) {
   for (const mobile of [false,true]) {
     await c('Emulation.setDeviceMetricsOverride',{width:mobile?390:1280,height:mobile?844:900,deviceScaleFactor:1,mobile});
     await goto('#explore','#explore-filters');
-    await evaluate("const park=document.querySelector('#explore-filters [name=park]');park.value='grba';park.dispatchEvent(new Event('input',{bubbles:true}))");
+    await evaluate("(()=>{const park=document.querySelector('#explore-filters [name=park]');park.value='grba';park.dispatchEvent(new Event('input',{bubbles:true}));})()");
     await wait("document.querySelector('#explore-results a[href=\"#trail/alpine-lakes-loop\"]')");
     assert.equal(await evaluate("document.querySelectorAll('#explore-results .trail-card').length"),1);
     await shot(mobile?'mobile-grba-filter':'desktop-grba-filter');
