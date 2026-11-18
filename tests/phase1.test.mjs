@@ -71,7 +71,7 @@ test('fresh and untouched v1 state have no seeded personal content', () => {
   assert.deepEqual(loadState(memory()), initialState());
   const store = memory([[legacyStorageKey, JSON.stringify(seeded)]]);
   assert.deepEqual(loadState(store), initialState());
-  assert.equal(store.getItem(legacyStorageKey), null);
+  assert.equal(store.getItem(legacyStorageKey), JSON.stringify(seeded));
   assert.equal(store.getItem(storageKey), JSON.stringify(initialState()));
 });
 

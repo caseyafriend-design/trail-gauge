@@ -2,7 +2,19 @@
 
 Trail Gauge helps hikers discover mapped trails across the United States and compare the fit of verified hikes for their group. The static site uses Leaflet maps and stores profiles, groups, and reviews in the browser.
 
-## Run the local preview
+## Foreground GPS prototype
+
+**Track** asks for explicit consent before requesting precise location. Start, Pause, Resume, and Finish save to a separate versioned browser key (`trail-gauge-recordings-v1`); **My hikes** shows completed details and explicit single-record deletion. Existing legacy planning data is retained when migrated. No account, uploads, sharing, or prediction learning is added. Coordinates remain private to this browser, not encrypted against device users; clearing site data/private browsing may lose them. Use only one app tab.
+
+Keep the page visible and screen unlocked. Hiding or leaving pauses tracking; reload recovers a paused draft and requires Resume. A device/browser crash can lose the latest unsaved fix. Limits: four wall-clock hours from Start, 7,200 accepted points per hike, 20 completed hikes, up to 200 quality/interrupt events. Full storage never silently removes older hikes. Storage failure pauses collection and keeps the in-memory draft for retrying Finish. Unsupported/corrupt recording storage is not overwritten.
+
+Fixes must report accuracy within 100 m, be recent and ordered, and avoid implausible jumps. Pauses, rejected fixes, and gaps over 30 seconds break distance segments; recorded distance is approximate and can drift or undercount. No moving-time, background reliability, route safety, or navigation claim. Browser test adapters mark simulated recordings visibly; simulated checks are not real GPS or iPhone evidence.
+
+Location needs a supported browser and a secure context (HTTPS or localhost on the same computer). An iPhone cannot access this Mac's localhost through its own localhost. No secure phone access route or real-device confirmation is established by this prototype. To run an isolated Mac preview without using the existing preview port: `python3 -m http.server 8812 --bind 127.0.0.1 --directory dist`.
+
+Automated checks: `node --test tests/*.test.mjs`. Disposable installed-Chrome flows: `TRAIL_GAUGE_EVIDENCE=<existing isolated evidence directory> node scripts/browser-gps.mjs`; existing catalog/weather/gallery/packing checks: `TRAIL_GAUGE_EVIDENCE=<existing isolated evidence directory> node scripts/browser-check.mjs`. Both browser scripts use disposable profiles and random loopback-only server/debug ports; no installation is needed.
+
+## Existing preview
 
 ```sh
 python3 -m http.server 8765 --bind 127.0.0.1 --directory dist

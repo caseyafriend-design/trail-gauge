@@ -1,3 +1,4 @@
+import { createGPSPages } from './gps-page.js';
 import { difficultyDial } from './difficulty-view.js';
 import { photoGallery } from './photo-gallery.js';
 import { forecastView } from './forecast-view.js';
@@ -26,7 +27,10 @@ import { alertsMaxAge, fetchAlerts, fetchForecast, forecastFor, forecastRequest,
 
 const screen = document.querySelector('#screen');
 const headerMenu = document.querySelector('.header-menu');
-const state = loadState(localStorage);
+const browserStorage = { getItem: key => window.localStorage.getItem(key),
+  setItem: (key, value) => window.localStorage.setItem(key, value) };
+const state = loadState(browserStorage);
+const mountGPSPage = createGPSPages(screen);
 const trails = await loadCatalog();
 const currentGroup = () => state.people.filter(person => state.memberIds.includes(person.id));
 const verifiedTrail = id => trails.find(trail => trail.id === id);
@@ -44,7 +48,7 @@ const lastRendered = new WeakMap();
 
 function save() {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(state));
+    browserStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     const status = document.querySelector('#storage-status');
     status.textContent = 'This browser could not save your changes. They are available while this page is open.';
@@ -55,7 +59,7 @@ const trailStats = trail => `${trail.miles} mi · ${trail.gain.toLocaleString('e
 const trailLink = trail => `#trail/${encodeURIComponent(trail.id)}`;
 const regionFor = trail => regions.find(region => region.id === trail.region);
 const localSnapshot = trail => {
-  if (!routeWeather.has(trail.id)) routeWeather.set(trail.id, { snapshot: readForecast(trail, localStorage) });
+  if (!routeWeather.has(trail.id)) routeWeather.set(trail.id, { snapshot: readForecast(trail, browserStorage) });
   return routeWeather.get(trail.id);
 };
 const contextFor = trail => ({ trip: state.trips[tripKey(trail, currentGroup())] ?? defaultTrip, history: state.history });
@@ -441,7 +445,7 @@ async function refreshForecast(trail, force = false) {
   syncLive();
   try {
     entry.snapshot = await pending;
-    writeForecast(trail, localStorage, entry.snapshot);
+    writeForecast(trail, browserStorage, entry.snapshot);
     entry.status = 'ready';
     entry.error = null;
   } catch (error) {
@@ -481,7 +485,7 @@ function render(focus = false) {
   const setup = page === 'profile' && id === 'setup';
   screen.dataset.page = setup ? 'profile' : page;
   const profilePages = ['group', 'friends', 'profile'];
-  const nav = profilePages.includes(page) ? 'group' : ['map', 'compare', 'history'].includes(page) ? page : 'explore';
+  const nav = profilePages.includes(page) ? 'group' : ['map', 'compare', 'history', 'track', 'my-hikes'].includes(page) ? page : 'explore';
   for (const link of document.querySelectorAll('.primary-nav a, #group-link, #history-link')) {
     if (link.id === nav + '-link') link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -490,7 +494,9 @@ function render(focus = false) {
   document.querySelector('#group-link').setAttribute('aria-label', `My Group · ${state.groupName} · ${currentGroup().length} hikers`);
   document.querySelector('#compare-count').textContent = state.compare.length ? `(${state.compare.length})` : '';
 
-  if (setup) {
+  if (page === 'track' || page === 'my-hikes') {
+    mountGPSPage(page, id);
+  } else if (setup) {
     screen.innerHTML = profilePage(null, true);
   } else if (page === 'us-trails') {
     screen.innerHTML = usSearchPage();
