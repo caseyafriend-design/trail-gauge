@@ -21,7 +21,7 @@ const adapter = mode => `{
   ${mode === 'blocked' ? "Object.defineProperty(window,'localStorage',{get(){throw new DOMException('Simulated blocked storage','SecurityError')}});" : ''}
 }`;
 
-await browserSession(async ({ c, evaluate, wait, goto, shot, events, scratch, origin }) => {
+await browserSession(async ({ c, evaluate, wait, goto, shot, events, waitEvent, scratch, origin }) => {
   await c('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   let injected;
   const install = async mode => {
@@ -91,11 +91,13 @@ await browserSession(async ({ c, evaluate, wait, goto, shot, events, scratch, or
   await shot('simulated-mobile-completed'); await legacyUnchanged();
   await reload('[data-gps-delete]'); assert.equal((await data()).hikes.length, 1);
   const deleteRequest = () => evaluate("document.querySelector('[data-gps-delete]').click()");
+  const cancelDialog = waitEvent('Page.javascriptDialogOpening');
   const cancelDelete = deleteRequest();
   // CDP dialog commands resolve the pending evaluated click.
-  await c('Page.handleJavaScriptDialog', { accept: false }); await cancelDelete;
+  await cancelDialog; await c('Page.handleJavaScriptDialog', { accept: false }); await cancelDelete;
   assert.equal((await data()).hikes.length, 1);
-  const acceptDelete = deleteRequest(); await c('Page.handleJavaScriptDialog', { accept: true }); await acceptDelete;
+  const acceptDialog = waitEvent('Page.javascriptDialogOpening');
+  const acceptDelete = deleteRequest(); await acceptDialog; await c('Page.handleJavaScriptDialog', { accept: true }); await acceptDelete;
   await wait("document.querySelector('#screen').dataset.page==='my-hikes' && !document.querySelector('[data-gps-delete]')");
   assert.equal((await data()).hikes.length, 0); await legacyUnchanged();
 
