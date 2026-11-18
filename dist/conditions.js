@@ -1,6 +1,7 @@
 import { parks } from './catalog.js';
 import { timeRange } from './planning.js';
-import { fetchNws, nwsMaxAge, nwsVersion, pointURL, validSnapshot, windowForecast } from './nws.js';
+import { fetchNws, freshSnapshot, nwsMaxAge, nwsVersion, pointURL, validSnapshot, windowForecast } from './nws.js';
+export { freshSnapshot, forecastRetryAt } from './nws.js';
 
 export const forecastSource = 'https://www.weather.gov/';
 export const forecastMaxAge = nwsMaxAge;
@@ -42,7 +43,7 @@ const cacheKey = trail => `trail-gauge-${nwsVersion}-${trail.id}`;
 export function readForecast(trail, storage, now = Date.now()) {
   try {
     const value = JSON.parse(storage.getItem(cacheKey(trail)));
-    if (!validSnapshot(value) || value.point !== pointURL(trail) || value.expiresAt <= now || value.fetchedAt > now) return null;
+    if (!freshSnapshot(value, now) || value.point !== pointURL(trail)) return null;
     return value;
   } catch (error) { console.warn('NWS cache unavailable; a fresh forecast is required.', error.message); return null; }
 }
@@ -51,20 +52,23 @@ export function writeForecast(trail, storage, snapshot, now = Date.now()) {
   try { storage.setItem(cacheKey(trail), JSON.stringify(snapshot)); }
   catch (error) { console.warn('NWS forecast could not be saved; it remains available in this tab.', error.message); }
 }
-export function forecastRequest(trail, plan, now = Date.now()) {
-  if (!plan?.date || !plan?.start) return { status: 'choose-time', weather: null };
+export function forecastRequest(trail, plan, now = Date.now(), strict = false) {
+  if (!plan) return { status: 'eligible', start: now, mode: 'current', weather: null };
   const start = startTimestamp(plan, parks[trail.parkCode].timeZone);
-  if (start === null || start < now) return { status: 'invalid-time', weather: null };
-  if (start > now + 7 * day) return { status: 'outside-horizon', weather: null };
-  return { status: 'eligible', start, weather: null };
+  if (start === null || start < now) return strict ? { status: 'invalid-time', weather: null }
+    : { status: 'eligible', start: now, mode: 'current', savedPlanStatus: 'invalid-time', weather: null };
+  return { status: 'eligible', start, mode: 'planned', weather: null };
 }
 export function forecastFor(trail, group, plan, snapshot, status, now = Date.now(), context = {}) {
   const request = forecastRequest(trail, plan, now);
   if (request.status !== 'eligible') return request;
-  if (status === 'failed' || status === 'pending') return { status, weather: null };
+  const annotate = result => ({ ...result, mode: request.mode, savedPlanStatus: request.savedPlanStatus });
+  if (status === 'failed' || status === 'pending') return annotate({ status, weather: null });
   if (snapshot && snapshot.point !== pointURL(trail)) return { status: 'missing', weather: null };
-  const end = request.start + timeRange(trail, group, null, context).high * 60000;
-  return windowForecast(snapshot, request.start, end, now);
+  const period = validSnapshot(snapshot) ? snapshot.periods.find(p => p.start <= now && now < p.end) : null;
+  const end = request.mode === 'current' ? period?.end ?? now + 1
+    : request.start + timeRange(trail, group, null, context).high * 60000;
+  return annotate(windowForecast(snapshot, request.start, end, now));
 }
 export const fetchForecast = fetchNws;
 

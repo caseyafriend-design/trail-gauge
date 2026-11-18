@@ -133,3 +133,32 @@ test('forecast view is digestible, escaped, locally timed, and does not convert 
     assert.match(unknown, /Official park conditions/);
   }
 });
+
+test('offline, timeout and 429 each back off without calls then recover', async () => {
+  for (const [index, failure] of [
+    async () => { throw new TypeError('Network offline'); },
+    async () => { throw new DOMException('The operation timed out', 'TimeoutError'); },
+    async () => ({ ok: false, status: 429, headers: new Headers({ 'Retry-After': '90' }) })
+  ].entries()) {
+    const trail = { trailhead: [-100 - index, 40] };
+    let calls = 0;
+    await assert.rejects(fetchNws(trail, async () => { calls++; return failure(); }, now), /Forecast unavailable/);
+    await assert.rejects(fetchNws(trail, async () => { calls++; }, now + 59999), /paused/);
+    assert.equal(calls, 1);
+    const recovered = await fetchNws(trail, async target => {
+      calls++;
+      return response(target.includes('/points/') ? { properties: { forecastHourly: url } } : fixture());
+    }, now + 90001);
+    assert.equal(calls, 3);
+    assert.equal(recovered.point, pointURL(trail));
+  }
+});
+
+test('storage denied retains in-memory forecast without claiming it was saved', () => {
+  const trail = { id: 'fixture', trailhead: [-105, 40] };
+  const storage = { getItem() { throw Error('denied'); }, setItem() { throw Error('denied'); } };
+  assert.equal(readForecast(trail, storage, now), null);
+  const s = snapshot(fixture());
+  assert.doesNotThrow(() => writeForecast(trail, storage, s, now));
+  assert.equal(windowForecast(s, now, now + 1, now).status, 'ready');
+});

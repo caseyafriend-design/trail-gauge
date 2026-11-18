@@ -37,7 +37,7 @@ await browserSession(async({c,evaluate,wait,goto,shot,events,scratch,root,origin
   }
   assert.ok(await evaluate("[...document.querySelectorAll('a')].some(a=>a.textContent.trim().startsWith('Edit group') && a.hash==='#group/riverside-walk')"));
   await evaluate("document.querySelector('#forecast').open=true");
-  assert.match(await evaluate("document.querySelector('#forecast-status').innerText"),/Choose a hike date/);
+  assert.match(await evaluate("document.querySelector('#forecast-status').innerText"),/CURRENT-HOUR FORECAST/);
   assert.match(await evaluate("document.querySelector('#forecast-status').innerText"),/Air temperature is not feels-like/);
   await evaluate("document.querySelector('[data-photo-step=\"1\"]').focus()");
   await c('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r'});
@@ -114,7 +114,7 @@ await browserSession(async({c,evaluate,wait,goto,shot,events,scratch,root,origin
  await goto('#history','#screen h1');assert.match(await evaluate("document.querySelector('#screen').innerText"),/Riverside Walk/);
  const urls=events.filter(e=>e.method==='Network.requestWillBeSent').map(e=>e.params.request.url);
  assert.ok(!urls.some(u=>/open-meteo/.test(u)));
- assert.ok(!urls.some(u=>/api.weather.gov/.test(u)),'no forecast request without a selected time');
+ assert.ok(urls.some(u=>/api.weather.gov/.test(u)),'current-hour baseline requests weather without a selected time');
  const errors=events.filter(e=>e.method==='Runtime.exceptionThrown');assert.equal(errors.length,0,JSON.stringify(errors));
  await writeFile(scratch+'/runtime-evidence.json',JSON.stringify({origin,root,urls,errors,checks:'desktop/mobile keyboard, overflow, route/access, packing and reviews persisted'},null,2));
  console.log('PASS compare/history retained, no Open-Meteo requests, no uncaught exceptions');

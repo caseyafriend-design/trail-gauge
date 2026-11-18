@@ -1,6 +1,7 @@
 import { difficultyDial } from './difficulty-view.js';
 import { photoGallery } from './photo-gallery.js';
 import { forecastView } from './forecast-view.js';
+import { selectForecastTime } from './forecast-selection.js';
 import { explorePage, mountExplore, preferenceButtons, preferenceKey } from './explore.js';
 import { routeSummary } from './route-summary.js';
 import { defaultTrip, packingCategories, packingSuggestions, tripKey } from './packing.js';
@@ -20,7 +21,7 @@ import { estimatedTime, groupDistance, groupTips, bestGroupFit, timeRange, group
 import { mountMap, removeMap } from './map.js';
 import { escapeHtml, historyPage, profilePage, friendsPage, groupPage } from './community.js';
 import { loadState, storageKey } from './state.js';
-import { alertsMaxAge, fetchAlerts, fetchForecast, forecastFor, forecastRequest,
+import { alertsMaxAge, fetchAlerts, fetchForecast, forecastFor, forecastRequest, freshSnapshot, forecastRetryAt,
   formatLocal, readForecast, writeForecast } from './conditions.js';
 
 const screen = document.querySelector('#screen');
@@ -237,6 +238,7 @@ function comparePage() {
         ${planFields()}
         <p class="planning-note full-width">Start time is local to each trail. NWS air forecasts are shown separately; estimates exclude weather.</p>
         <button class="button" type="submit">Update recommendation</button>
+        <button class="button secondary" type="submit" name="action" value="now">Current weather / reset to now</button>
         <p class="planning-note full-width" data-plan-status role="status"></p>
       </form>
     </section>
@@ -337,7 +339,8 @@ function trailPage(trail) {
       <form id="weather-form" class="fit-form">
         <label>Hike date<input name="date" type="date" value="${escapeHtml(state.hikePlan?.date ?? '')}"></label>
         <label>Start time · ${escapeHtml(parks[trail.parkCode].timeZone)}<input name="start" type="time" value="${escapeHtml(state.hikePlan?.start ?? '')}"></label>
-        <button class="button" type="submit">Update forecast</button><p data-plan-status role="status"></p>
+        <button class="button" type="submit">Use chosen time</button>
+        <button class="button secondary" type="submit" name="action" value="now">Current weather / reset to now</button><p data-plan-status role="status"></p>
       </form>
       <div id="forecast-status">${forecastPanel(trail)}</div>
     </details>
@@ -406,18 +409,32 @@ function syncLive() {
   const expiration = watched.flatMap(item => {
     const snapshot = localSnapshot(item).snapshot;
     const request = forecastRequest(item, state.hikePlan);
-    return [snapshot?.expiresAt, snapshot?.issuedAt + 12 * 60 * 60 * 1000, request.start + 1];
+    const currentEnd = snapshot?.periods?.find(p => p.start <= Date.now() && Date.now() < p.end)?.end;
+    return [snapshot?.expiresAt, snapshot?.issuedAt + 12 * 60 * 60 * 1000,
+      request.mode === 'planned' ? request.start + 1 : currentEnd];
   });
   if (page === 'trail' && watched.length) expiration.push(parkAlerts.get(trail.parkCode)?.snapshot?.fetchedAt + alertsMaxAge);
   const now = Date.now();
   const next = Math.min(...expiration.filter(time => time > now));
-  if (Number.isFinite(next)) freshnessTimer = setTimeout(syncLive, next - now);
+  if (Number.isFinite(next)) freshnessTimer = setTimeout(revalidateLive, next - now);
+}
+
+function revalidateLive() {
+  syncLive();
+  const { page, trail } = screenRoute();
+  const watched = page === 'compare' ? selectedTrails() : ['trail', 'packing'].includes(page) && verifiedTrail(trail?.id) ? [trail] : [];
+  watched.forEach(item => refreshForecast(item));
 }
 
 async function refreshForecast(trail, force = false) {
-  if (forecastRequest(trail, state.hikePlan).status !== 'eligible' || forecastRequests.has(trail.id)) return;
+  if (forecastRequests.has(trail.id)) return forecastRequests.get(trail.id).catch(() => undefined);
   const entry = localSnapshot(trail);
-  if (!force && entry.status !== 'failed' && entry.snapshot && Date.now() < entry.snapshot.expiresAt) return;
+  const now = Date.now();
+  if (now < forecastRetryAt(trail) || (!force && now < (entry.nextAttemptAt ?? 0))) return;
+  if (!force && entry.status !== 'failed' && freshSnapshot(entry.snapshot, now) && conditionsFor(trail).status !== 'outside-horizon') return;
+  // Never create a retry loop, including successful but unusable/no-store responses.
+  // Failure recovery is a later focus/navigation/explicit submit, after backoff.
+  entry.nextAttemptAt = now + 60000;
   entry.status = 'pending';
   const pending = fetchForecast(trail);
   forecastRequests.set(trail.id, pending);
@@ -671,26 +688,24 @@ screen.addEventListener('change', event => {
   }
 });
 
-screen.addEventListener('submit', event => {
+screen.addEventListener('submit', async event => {
   if (event.defaultPrevented) return;
   event.preventDefault();
   const { id, anchor, trail } = screenRoute();
   const form = event.target;
   const data = new FormData(form, event.submitter ?? undefined);
   if (form.id === 'fit-form' || form.id === 'weather-form') {
-    const date = data.get('date');
-    const start = data.get('start');
-    if (Boolean(date) !== Boolean(start)) {
-      form.querySelector('[data-plan-status]').textContent = 'Enter both a hike date and a start time.';
-      return;
-    }
-    state.hikePlan = date && start ? { date, start } : null;
+    const targets = form.id === 'fit-form' ? selectedTrails() : trail ? [trail] : [];
+    const selection = await selectForecastTime({ form, data, targets, group: currentGroup, contextFor,
+      entryFor: localSnapshot, refresh: refreshForecast });
+    if (!selection) return;
+    state.hikePlan = selection.plan;
     if (form.id === 'fit-form') {
       state.fitBudget = Number(data.get('budget'));
       form.querySelector('[data-plan-status]').textContent = '';
       selectedTrails().forEach(item => refreshForecast(item));
     } else if (trail) {
-      refreshForecast(trail, true);
+      if (!selection.plan) refreshForecast(trail, true);
       refreshAlerts(trail.parkCode);
     }
     save();
@@ -864,5 +879,5 @@ window.addEventListener('hashchange', () => {
   headerMenu.open = false;
   render(true);
 });
-window.addEventListener('focus', syncLive);
+window.addEventListener('focus', revalidateLive);
 render();

@@ -22,6 +22,14 @@ export function pointURL(trail) {
   return `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`;
 }
 
+// Shared by rendering, persistent cache reads, and network revalidation.
+export function freshSnapshot(snapshot, now = Date.now()) {
+  return validSnapshot(snapshot) && snapshot.fetchedAt <= now && now < snapshot.expiresAt &&
+    now - snapshot.issuedAt < 12 * 60 * 60 * 1000 && snapshot.issuedAt <= now + 60000;
+}
+
+export const forecastRetryAt = trail => retryAt.get(pointURL(trail)) ?? 0;
+
 export function normalizeNws(data, { url, point, now = Date.now(), expiresAt = now + nwsMaxAge } = {}) {
   const p = data?.properties;
   const issuedAt = instant(p?.updateTime);
@@ -56,7 +64,7 @@ export function windowForecast(snapshot, start, end, now = Date.now()) {
   const unknown = status => ({ status, weather: null, forecast: null });
   if (!finite(start) || !finite(end) || end <= start || start < now) return unknown('invalid-time');
   if (!validSnapshot(snapshot)) return unknown('missing');
-  if (snapshot.fetchedAt > now || now >= snapshot.expiresAt || now - snapshot.issuedAt >= 12 * 60 * 60 * 1000 || snapshot.issuedAt > now + 60000) return unknown('stale');
+  if (!freshSnapshot(snapshot, now)) return unknown('stale');
   if (start < snapshot.validFrom || end > snapshot.validThrough) return unknown('outside-horizon');
   const periods = snapshot.periods.filter(p => p.start < end && p.end > start);
   if (!periods.length || periods[0].start > start || periods.at(-1).end < end ||

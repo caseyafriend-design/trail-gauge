@@ -15,7 +15,9 @@ export function forecastView(trail, result, official, error) {
   const numbers = key => f.periods.map(p => p[key]).filter(Number.isFinite);
   const range = values => values.length ? `${Math.round(Math.min(...values))}–${Math.round(Math.max(...values))} °F` : 'Unknown';
   const ready = result.status === 'ready' && f;
-  return `<p role="status">${ready ? 'NWS hourly forecast for the estimated outing' : messages[result.status] ?? messages.missing}</p>
+  return `<p class="eyebrow">${result.mode === 'current' ? 'CURRENT-HOUR FORECAST' : 'PLANNED OUTING FORECAST'}</p>
+    ${result.savedPlanStatus ? '<p class="planning-note">Your saved plan is unchanged, but its time is past or invalid here. Showing the current-hour baseline. Choose a new time or use Current weather / reset to now.</p>' : ''}
+    <p role="status">${ready ? (result.mode === 'current' ? 'NWS hourly forecast for the current supported hour, not observed conditions or an outing plan.' : 'NWS hourly forecast for the estimated outing') : messages[result.status] ?? messages.missing}</p>
     ${ready ? `<dl class="forecast-metrics"><div><dt>Air temperature</dt><dd>${range(numbers('temperature'))}${numbers('temperature').length < f.periods.length ? ' (some hours unknown)' : ''}</dd></div>
       <div><dt>Precipitation chance</dt><dd>${numbers('probability').length ? Math.max(...numbers('probability')) + '% maximum' : 'Unknown'}${numbers('probability').length < f.periods.length ? ' (some hours unknown)' : ''}</dd></div></dl>
       <p>${h(formatLocal(f.start, trail.parkCode))} to ${h(formatLocal(f.end, trail.parkCode))} · park local time.</p>

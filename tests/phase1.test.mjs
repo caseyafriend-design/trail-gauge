@@ -148,9 +148,9 @@ test('NWS integration ignores old-provider snapshots and never treats missing we
     for (const index of [2, 6, 7]) assert.equal(estimate(flattop, group, result.weather).factors[index], null);
   }
   assert.equal(forecastRequest(flattop, plan, now).status, 'eligible');
-  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-28' }, now).status, 'outside-horizon');
-  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-10' }, now).status, 'invalid-time');
-  assert.equal(forecastRequest(flattop, null, now).status, 'choose-time');
+  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-28' }, now).status, 'eligible'); // actual provider horizon decides
+  assert.equal(forecastRequest(flattop, { ...plan, date: '2026-11-10' }, now, true).status, 'invalid-time');
+  assert.equal(forecastRequest(flattop, null, now).mode, 'current');
   assert.equal(forecastFor(flattop, group, plan, null, 'failed', now).status, 'failed');
 });
 
