@@ -16,8 +16,8 @@ export function historyPage(history, trailFor) {
       const date = entry.date ? new Date(entry.date + 'T12:00:00').toLocaleDateString('en-US', {dateStyle: 'medium'}) : 'Date unavailable';
       return `<article class="card journal"><span class="eyebrow">Your review · ${escapeHtml(date)}</span>
         <h2>${trail ? `<a href="#trail/${encodeURIComponent(entry.trailId)}">${name}</a>` : name}</h2>
-        <p>${entry.group ? escapeHtml(entry.group) + ' · ' : ''}${entry.minutes ? escapeHtml(entry.minutes) + ' min elapsed · ' : ''}${entry.moving ? escapeHtml(entry.moving) + ' min moving · ' : ''}Felt ${escapeHtml(entry.rating)}${entry.predicted ? ' · Estimated ' + escapeHtml(entry.predicted) : ''}</p>
-        <p>Hardest factor · ${escapeHtml(entry.factor)}</p>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ''}
+        <p>${entry.group ? escapeHtml(entry.group) + ' · ' : ''}${entry.minutes ? escapeHtml(entry.minutes) + ' min elapsed · ' : ''}${entry.moving ? escapeHtml(entry.moving) + ' min moving · ' : ''}Felt ${escapeHtml(entry.rating || 'Unknown')}${entry.predicted ? ' · Estimated ' + escapeHtml(entry.predicted) : ''}</p>
+        <p>Hardest factor · ${escapeHtml(entry.factor || 'Unknown')}</p>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ''}
         ${reviewObservations(entry)}
         ${entry.id ? `<div class="trail-actions">${trail ? `<a class="compare-toggle" href="#review/${encodeURIComponent(entry.trailId)}/${encodeURIComponent(entry.id)}">Edit review</a>` : ''}
           ${entry.hikerId && entry.moving ? `<button type="button" class="compare-toggle" data-calibration="${escapeHtml(entry.id)}">${entry.calibrate === false ? 'Use for estimates' : 'Exclude from estimates'}</button>` : ''}</div>` : ''}</article>`;

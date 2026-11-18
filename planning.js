@@ -15,7 +15,7 @@ export function timeRange(trail, group, weather, context = {}) {
   const uphill = trail.ascentGrade ?? trail.typicalGrade ?? 0;
   const downhill = trail.descentGrade ?? trail.typicalGrade ?? 0;
   const baseMinutes = trail.miles / pace * 60 + trail.gain / 100;
-  const moving = baseMinutes * (1 + terrainPaceCost(trail, trip.packWeight) + temperature / 350 + precipitation / 450 + wind / 650);
+  const moving = baseMinutes * (1 + terrainPaceCost(trail, trip.packWeight) + (temperature ?? 0) / 350 + (precipitation ?? 0) / 450 + (wind ?? 0) / 650);
   const uncertain = !paces.length || paces.some(hiker => hiker.outings.length === 0) || !trail.surface || !(uphill && downhill);
   const factor = uncertain ? 1.2 : 1.14;
   const movingLow = Math.max(5, Math.round(moving / 5) * 5);
@@ -24,7 +24,7 @@ export function timeRange(trail, group, weather, context = {}) {
   const nights = trip.nights ?? 0;
   const stopMinutes = nights * (trip.nightHours ?? 8) * 60;
   return { low: movingLow + breaks + stopMinutes, high: movingHigh + breaks + stopMinutes,
-    movingLow, movingHigh, breaks, stopMinutes, uncertain, paces };
+    movingLow, movingHigh, breaks, stopMinutes, uncertain, paces, weatherKnown: Boolean(weather) };
 }
 
 export function estimatedTime(trail, group, weather, context) {

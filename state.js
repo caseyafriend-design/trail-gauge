@@ -71,7 +71,7 @@ export function loadState(storage) {
       const state = migrateState(JSON.parse(legacy));
       try {
         storage.setItem(storageKey, JSON.stringify(state));
-        storage.removeItem(legacyStorageKey);
+        // Retain the original legacy data; deletion must be explicit.
       } catch {
         // Keep the original if the browser cannot write the migration.
       }

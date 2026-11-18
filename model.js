@@ -29,7 +29,7 @@ export function profileChallenges(trail, hiker) {
 }
 
 export function weatherStress(weather) {
-  if (!weather) return [0, 0, 0];
+  if (!weather) return [null, null, null];
   const { apparentMin, apparentMax, gustMax, types, probabilityMax } = weather;
   const temperature = Math.min(100, Math.max(0, (apparentMax - 75) * 3.35, (40 - apparentMin) * 2));
   const wet = types.some(type => ['Snow', 'Freezing precipitation', 'Thunderstorms'].includes(type))
