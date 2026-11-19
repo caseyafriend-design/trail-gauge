@@ -217,6 +217,9 @@ textarea{font:inherit;width:100%;border:1px solid #4a554b;border-radius:8px;back
 .explore-tabs button[aria-pressed="true"]{background:#234138;border-color:#57967c}
 .explore-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,265px),1fr));gap:10px;margin:10px 0 20px}
 .explore-grid .trail-card{min-width:0}
+.explore-photo{margin:0 0 12px}
+.explore-photo img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:10px}
+.explore-photo figcaption{font-size:.75rem;overflow-wrap:anywhere;margin-top:6px}
 .trail-park{font-size:.75rem;color:var(--mint);margin:0 0 5px}
 .trail-actions{margin-top:11px}
 .trail-actions .compare-toggle{min-height:36px}

@@ -3,23 +3,39 @@ import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { photos, photosFor } from '../dist/photos.js';
 import { photoGallery } from '../dist/photo-gallery.js';
+import { explorePhoto } from '../dist/explore-photo.js';
+
+const catalog = JSON.parse(await readFile(new URL('../dist/routes.geojson', import.meta.url), 'utf8')).features;
 
 test('every current hike has individually credited, commercially reusable photo provenance', () => {
-  for (const id of ['riverside-walk', 'bear-lake', 'flattop-mountain', 'hall-of-mosses', 'lower-yosemite-fall', 'limberlost', 'desert-discovery']) {
-    assert.equal(photosFor(id).length, 2);
+  for (const { id } of catalog) {
+    assert.equal(photosFor(id).length, id === 'alpine-lakes-loop' ? 1 : 2);
     for (const p of photosFor(id)) {
       assert.match(p.source, /^https:\/\/commons.wikimedia.org\/wiki\/File:/);
       assert.match(p.src, /^https:\/\/upload.wikimedia.org\//);
       assert.ok(p.creator && p.caption && p.basis && p.date && p.title && p.changes);
-      assert.equal(p.reviewed, '2026-11-16');
+      assert.equal(p.reviewed, id === 'alpine-lakes-loop' ? '2026-11-19' : '2026-11-16');
       assert.ok(p.width <= 960);
       if (p.license.startsWith('CC')) assert.match(p.licenseUrl, /^https:\/\/creativecommons.org\/licenses\/by(?:-sa)?\/[234]\.0\/$/);
       else { assert.equal(p.licenseUrl, null); assert.match(p.rightsEvidence, /#Licensing$/); }
     }
   }
-  assert.equal(photos.length, 14);
+  assert.equal(catalog.length, 8);
+  assert.equal(photos.length, 15);
   assert.match(photosFor('limberlost')[1].caption, /Historical/);
   assert.equal(photosFor('limberlost')[1].width, 534);
+});
+
+test('Explore photos are associated, credited and linked, with no substitution for unverified segments', () => {
+  for (const { id, properties } of catalog) {
+    const photo = photosFor(id)[0];
+    const html = explorePhoto({ id, name: properties.name });
+    for (const value of [photo.asset, photo.source, photo.rightsEvidence, '#trail/' + id, 'data-photo-error', 'Card display cropped to 16:9', 'not current trail conditions']) assert.ok(html.includes(value), value);
+    if (photo.licenseUrl) assert.ok(html.includes(photo.licenseUrl));
+    assert.equal((html.match(/<img /g) ?? []).length, 1);
+  }
+  assert.match(explorePhoto({ id: 'riverside-walk', name: '<Route>' }), /View &lt;Route&gt;/);
+  assert.equal(explorePhoto({ id: 'usgs-unknown', name: 'Unverified' }), '');
 });
 
 test('gallery wraps, escapes and retains per-image credit beside an image-error fallback', () => {

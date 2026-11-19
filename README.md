@@ -67,6 +67,8 @@ The original seven GeoJSON itineraries were imported November 11, 2026; Alpine L
 
 Other previous routes are unavailable pending a verified end-to-end trace and matching stats. Old bookmarks and reviews still resolve to their trail names, including Queens Garden in Bryce Canyon. Unverified route attributes are shown as unavailable.
 
+Explore cards show one associated gallery photo for each of the eight curated hikes, with consistent 16:9 display cropping and expandable individual credits. USGS segments without verified imagery remain without photos. [Photo coverage and additional Great Basin rights](docs/explore-photo-coverage.md).
+
 Photo galleries use individually reviewed Wikimedia Commons files, not a blanket NPS license. Each image carries its own creator, title, date, source, license link or public-domain basis, and rendition information in **Image credit & rights**. Historical photos do not establish current conditions or accessibility. Federal-work public-domain statements are US-specific; worldwide status is not independently established. The four previously bundled images were removed because their individual reuse rights were not established. `dist/photos.js` records the replacement evidence; `node scripts/photo-assets.mjs` retrieves only those bounded JPEG renditions serially and stops on an error. Respect the response's Retry-After before retrying.
 
 ### Refreshing the route snapshot

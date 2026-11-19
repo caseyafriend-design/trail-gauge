@@ -1,0 +1,9 @@
+# Explore photo coverage
+
+Owner: Trail Gauge Explore maintainer. `scripts/browser-explore-photos.mjs` covers Explore cards and photo metadata/rendering in `dist/app.js`, `dist/explore-photo.js`, `dist/photos.js`, `dist/style.css`, and filter/list interactions in `dist/explore.js`. It uses installed Chrome through the existing isolated browserSession harness. `tests/photos.test.mjs` covers manifest, assets, gallery and card markup. No shared setup changes.
+
+Run: `TRAIL_GAUGE_EVIDENCE=<existing evidence directory> node scripts/browser-explore-photos.mjs`. The JSON record pins the clean checkout commit. Screenshots cover desktop and mobile; the script tests all eight photo decodes, route/asset/credit association, keyboard navigation, park/query/distance filtering, saved/skip list redraw and compare, no horizontal overflow or runtime exceptions, and retained rights on image failure. No live data or customer storage is used.
+
+## Additional individual photo rights
+
+Reviewed November 19, 2026: [Great Basin National Park - Stella Lake.JPG](https://commons.wikimedia.org/wiki/File:Great_Basin_National_Park_-_Stella_Lake.JPG), own work by Jrmichae, July 7, 2014. Individual file page explicitly grants [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); attribution, source, license and display crop information remain with the card and gallery. Bundled unchanged Wikimedia 960-pixel JPEG rendition; CSS crops the card to 16:9. The existing gallery remains uncropped. [NPS Stella Lake](https://www.nps.gov/places/stella-lake.htm) establishes that the lake is along Alpine Lakes Loop. Exact camera spot and current conditions are not claimed. This is associated lake scenery, not an unrelated summit-trail photograph. Existing seven route rights records are unchanged; USGS segments without verified imagery remain without photos.
