@@ -11,7 +11,7 @@ export function explorePhoto(trail) {
     <figcaption><details><summary>Photo credit &amp; rights</summary>
       <p><a href="${h(photo.source)}" target="_blank" rel="noopener">${h(photo.title)}</a> — ${h(photo.creator)}.</p>
       <p>${photo.licenseUrl ? `<a href="${h(photo.licenseUrl)}" target="_blank" rel="noopener">${h(photo.license)}</a>` : h(photo.license)} · <a href="${h(photo.rightsEvidence)}" target="_blank" rel="noopener">Individual rights evidence ↗</a></p>
-      <p>${h(photo.basis)} Photographed ${h(photo.date)}. ${h(photo.changes)} Card display cropped to 16:9. Rights reviewed ${h(photo.reviewed)}. No endorsement implied.</p>
+      <p>${h(photo.basis)} Photographed ${h(photo.date)}. Gallery rendition: ${h(photo.changes)} Card display cropped to 16:9. Rights reviewed ${h(photo.reviewed)}. No endorsement implied.</p>
       <p>Historical photo, not current trail conditions or accessibility evidence.</p>
     </details></figcaption></figure>`;
 }
