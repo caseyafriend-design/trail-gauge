@@ -1,6 +1,7 @@
 import { createGPSPages } from './gps-page.js';
 import { difficultyDial } from './difficulty-view.js';
 import { photoGallery } from './photo-gallery.js';
+import { explorePhoto } from './explore-photo.js';
 import { forecastView } from './forecast-view.js';
 import { selectForecastTime } from './forecast-selection.js';
 import { explorePage, mountExplore, preferenceButtons, preferenceKey } from './explore.js';
@@ -118,6 +119,7 @@ const browseUS = '<a class="button secondary browse-us" href="#us-trails">Browse
 function exploreCard(trail, nearbyMiles) {
   const result = resultFor(trail);
   return `<article class="trail-card">
+    ${explorePhoto(trail)}
     <a class="trail-info" href="${trailLink(trail)}"><p class="trail-park">${trail.park}</p><div class="trail-top"><h3>${trail.name}</h3>
       <span class="level ${result?.rating.toLowerCase() ?? ''}">${result?.limits.length ? 'Firm limit' : result?.rating ?? 'Choose hikers'}</span></div>
       <p>${trailStats(trail)} · ${timeFor(trail)}${nearbyMiles == null ? '' : ' · ' + Math.round(nearbyMiles) + ' mi away'}</p></a>
